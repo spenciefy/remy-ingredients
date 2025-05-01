@@ -9,7 +9,7 @@ export default function App() {
       <div className="flex-1 relative mr-4">
         <div className="absolute inset-0 bg-white rounded-2xl shadow-2xl overflow-hidden">
           <Tldraw 
-            autoFocus={false} 
+            autoFocus={true} 
             persistenceKey="my-persistence-key"
             hideUi={false}
           />
