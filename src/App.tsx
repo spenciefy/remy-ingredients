@@ -1,17 +1,31 @@
-import { Tldraw } from 'tldraw';
+import React from 'react';
+import { Editor, Tldraw } from 'tldraw';
 import 'tldraw/tldraw.css';
+import { IngredientToolbar } from './components/IngredientToolbar';
+import { IngredientShapeUtil } from './shapes/IngredientShape';
 import './styles.css';
 
+const customShapeUtils = [IngredientShapeUtil]
+
 export default function App() {
+  const [editor, setEditor] = React.useState<Editor | null>(null);
+
+  const handleMount = (editor: Editor) => {
+    setEditor(editor);
+  };
+
   return (
     <div className="flex h-screen w-screen bg-gray-100 p-4">
       {/* Left side - TLDraw Canvas */}
       <div className="flex-1 relative mr-4">
         <div className="absolute inset-0 bg-white rounded-2xl shadow-2xl overflow-hidden">
+          {editor && <IngredientToolbar editor={editor} />}
           <Tldraw 
             autoFocus={true} 
             persistenceKey="my-persistence-key"
             hideUi={false}
+            shapeUtils={customShapeUtils}
+            onMount={handleMount}
           />
         </div>
       </div>
