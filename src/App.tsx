@@ -1,17 +1,41 @@
-import { Tldraw } from 'tldraw';
+import { ClipboardEvent, useCallback, useRef } from 'react';
+import { Editor, Tldraw } from 'tldraw';
 import 'tldraw/tldraw.css';
+import { ImageIngredientShape } from './shapes/ImageIngredientShape';
+import { TextIngredientShape } from './shapes/TextIngredientShape';
 import './styles.css';
+import { handleGlobalPaste } from './utils/pasteHandler';
 
 export default function App() {
+  const customShapeUtils = [
+    TextIngredientShape,
+    ImageIngredientShape
+  ]
+
+  const editorRef = useRef<Editor | null>(null);
+
+  const handlePaste = useCallback((e: ClipboardEvent<HTMLDivElement>) => {
+    if (editorRef.current) {
+      handleGlobalPaste(e.nativeEvent, editorRef.current);
+    }
+  }, []);
+
   return (
     <div className="flex h-screen w-screen bg-gray-100 p-4">
       {/* Left side - TLDraw Canvas */}
       <div className="flex-1 relative mr-4">
-        <div className="absolute inset-0 bg-white rounded-2xl shadow-2xl overflow-hidden">
-          <Tldraw 
+        <div 
+          className="absolute inset-0 bg-white rounded-2xl shadow-2xl overflow-hidden"
+          onPaste={handlePaste}
+        >
+          <Tldraw
             autoFocus={true} 
             persistenceKey="my-persistence-key"
             hideUi={false}
+            shapeUtils={customShapeUtils}
+            onMount={(editor) => {
+              editorRef.current = editor;
+            }}
           />
         </div>
       </div>
