@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { BaseBoxShapeUtil, HTMLContainer, RecordProps, T, TLBaseShape } from 'tldraw'
 import { useShapeIndex } from '../hooks/useShapeIndex'
 import { Comment, CommentValidator } from '../types/Comment'
+import { generateIngredientSummary } from '../utils/llmService'
 import { IngredientFooter } from './IngredientFooter'
 
 type IImageIngredientShape = TLBaseShape<
@@ -31,6 +33,7 @@ function ImageIngredientContent({
 }) {
 	const getShapeIndex = useShapeIndex()
 	const index = getShapeIndex(shape.id)
+	const [isSummarizing, setIsSummarizing] = useState(false)
 
 	const handlePaste = async (e: React.ClipboardEvent) => {
 		e.preventDefault()
@@ -55,6 +58,26 @@ function ImageIngredientContent({
 
 	// Calculate total height based on number of comments
 	const totalHeight = shape.props.h + (shape.props.comments.length * 50)
+
+	const handleGenerateSummary = async () => {
+		if (isSummarizing) return
+		
+		setIsSummarizing(true)
+		try {
+			// For images, use a description of the image
+			const imageDescription = shape.props.imageUrl 
+				? "An image" + (shape.props.title ? ` titled "${shape.props.title}"` : "")
+				: "No image content yet";
+				
+			const summary = await generateIngredientSummary(imageDescription, shape.props.title)
+			onAddComment(summary, true)
+		} catch (error) {
+			console.error('Error generating summary:', error)
+			onAddComment('Failed to generate summary. Please try again.', true)
+		} finally {
+			setIsSummarizing(false)
+		}
+	}
 
 	return (
 		<HTMLContainer
@@ -152,6 +175,8 @@ function ImageIngredientContent({
 				onDelete={onDelete}
 				onAddComment={onAddComment}
 				onDeleteComment={onDeleteComment}
+				onGenerateSummary={handleGenerateSummary}
+				isSummarizing={isSummarizing}
 			/>
 		</HTMLContainer>
 	)

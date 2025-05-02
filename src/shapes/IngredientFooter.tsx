@@ -10,6 +10,8 @@ interface IngredientFooterProps {
 	onDelete: () => void
 	onAddComment: (text: string, isAI?: boolean) => void
 	onDeleteComment: (commentId: string) => void
+	onGenerateSummary: () => void
+	isSummarizing?: boolean
 }
 
 export function IngredientFooter({
@@ -20,6 +22,8 @@ export function IngredientFooter({
 	onDelete,
 	onAddComment,
 	onDeleteComment,
+	onGenerateSummary,
+	isSummarizing = false,
 }: IngredientFooterProps) {
 	const [isEditingTitle, setIsEditingTitle] = useState(false)
 
@@ -86,6 +90,50 @@ export function IngredientFooter({
 						>
 							{title || `Ingredient ${index}`}
 						</div>
+						<button
+							onClick={(e) => {
+								e.stopPropagation()
+								onGenerateSummary()
+							}}
+							style={{
+								background: 'transparent',
+								border: 'none',
+								padding: '4px',
+								cursor: 'pointer',
+								color: '#7C9EFF',
+								display: 'flex',
+								alignItems: 'center',
+							}}
+							onPointerDown={(e) => e.stopPropagation()}
+							title="Generate summary"
+							disabled={isSummarizing}
+						>
+							{isSummarizing ? (
+								<svg 
+									width="16" 
+									height="16" 
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="2"
+									className="animate-spin"
+								>
+									<circle cx="12" cy="12" r="10" strokeWidth="4" stroke="currentColor" strokeDasharray="32" strokeDashoffset="12" fill="none" />
+								</svg>
+							) : (
+								<svg 
+									width="16" 
+									height="16" 
+									viewBox="0 0 24 24" 
+									fill="none" 
+									stroke="currentColor" 
+									strokeWidth="2"
+								>
+									<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+									<path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+								</svg>
+							)}
+						</button>
 						<button
 							onClick={(e) => {
 								e.stopPropagation()
