@@ -43,7 +43,8 @@ function TextIngredientContent({
 		
 		setIsSummarizing(true)
 		try {
-			const summary = await generateIngredientSummary(shape.props.text, shape.props.title)
+			console.log('Text content being sent to OpenAI:', shape.props.text);
+			const summary = await generateIngredientSummary(shape.props.text, shape.props.title, false)
 			onAddComment(summary, true)
 		} catch (error) {
 			console.error('Error generating summary:', error)

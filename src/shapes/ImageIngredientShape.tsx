@@ -64,12 +64,8 @@ function ImageIngredientContent({
 		
 		setIsSummarizing(true)
 		try {
-			// For images, use a description of the image
-			const imageDescription = shape.props.imageUrl 
-				? "An image" + (shape.props.title ? ` titled "${shape.props.title}"` : "")
-				: "No image content yet";
-				
-			const summary = await generateIngredientSummary(imageDescription, shape.props.title)
+			console.log('Image URL being sent to OpenAI:', shape.props.imageUrl);
+			const summary = await generateIngredientSummary(shape.props.imageUrl, shape.props.title, true)
 			onAddComment(summary, true)
 		} catch (error) {
 			console.error('Error generating summary:', error)
