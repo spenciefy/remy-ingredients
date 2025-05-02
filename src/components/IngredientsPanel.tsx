@@ -20,6 +20,60 @@ export function IngredientsPanel() {
   const [isExpanded, setIsExpanded] = useState(true)
   const [width, setWidth] = useState(320)
   const [isResizing, setIsResizing] = useState(false)
+  const [copySuccess, setCopySuccess] = useState(false)
+
+  // Convert image URL to base64
+  const getBase64FromUrl = async (url: string): Promise<string> => {
+    try {
+      const response = await fetch(url)
+      const blob = await response.blob()
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      })
+    } catch (error) {
+      console.error('Error converting image to base64:', error)
+      return ''
+    }
+  }
+
+  // Format ingredients data for LLM
+  const formatIngredientsForLLM = useCallback(async () => {
+    const formattedIngredients = await Promise.all(ingredients.map(async (ingredient, index) => {
+      const title = ingredient.props.title || `Ingredient ${index}`
+      const type = ingredient.type === 'text-ingredient-shape' ? 'text' : 'image'
+      const text = ingredient.props.text || ''
+      
+      let imageData = ''
+      if (type === 'image' && ingredient.props.imageUrl) {
+        imageData = await getBase64FromUrl(ingredient.props.imageUrl)
+      }
+      
+      return [
+        `# Ingredient: ${title}`,
+        `Type: ${type}`,
+        text ? `Content: ${text}` : '',
+        imageData ? `Image: ${imageData}` : '',
+        '' // Empty line for spacing
+      ].filter(line => line !== '').join('\n')
+    }))
+    
+    return formattedIngredients.join('\n\n')
+  }, [ingredients])
+
+  // Handle copy to clipboard
+  const handleCopyToClipboard = useCallback(async () => {
+    try {
+      const formattedData = await formatIngredientsForLLM()
+      await navigator.clipboard.writeText(formattedData)
+      setCopySuccess(true)
+      setTimeout(() => setCopySuccess(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+    }
+  }, [formatIngredientsForLLM])
 
   // Handle resize
   const handleResizeStart = useCallback((e: MouseEvent) => {
@@ -146,23 +200,56 @@ export function IngredientsPanel() {
           <div className="flex-1">
             <h2 className="text-lg font-semibold">Ingredients</h2>
           </div>
-          <button
-            onClick={toggleExpanded}
-            className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-            title={isExpanded ? 'Collapse panel' : 'Expand panel'}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCopyToClipboard}
+              className="p-1 hover:bg-gray-100 rounded-md transition-colors relative group"
+              title="Copy ingredients data"
             >
-              <path d="M19 9l-7 7-7-7"/>
-            </svg>
-          </button>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className={`transition-opacity ${copySuccess ? 'opacity-0' : 'opacity-100'}`}
+              >
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+              </svg>
+              {copySuccess && (
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="text-green-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+                >
+                  <path d="M20 6L9 17l-5-5"/>
+                </svg>
+              )}
+            </button>
+            <button
+              onClick={toggleExpanded}
+              className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+              title={isExpanded ? 'Collapse panel' : 'Expand panel'}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+              >
+                <path d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Content */}
