@@ -5,12 +5,14 @@ interface ShapeHeaderProps {
 	onTitleChange: (newTitle: string) => void
 	onDelete: () => void
 	icon?: React.ReactNode
+	index?: number
 }
 
 export function ShapeHeader({ 
 	title, 
 	onTitleChange, 
 	onDelete,
+	index,
 	icon = (
 		<svg 
 			width="16" 
@@ -47,6 +49,8 @@ export function ShapeHeader({
 		alignItems: 'center',
 		justifyContent: 'center',
 	}
+
+	const displayTitle = title || (typeof index === 'number' ? `Ingredient ${index}` : 'Add ingredient name')
 
 	return (
 		<div
@@ -103,7 +107,7 @@ export function ShapeHeader({
 						color: title ? '#374151' : '#9CA3AF'
 					}}
 				>
-					{title || 'Add ingredient name'}
+					{displayTitle}
 				</div>
 			)}
 			<button

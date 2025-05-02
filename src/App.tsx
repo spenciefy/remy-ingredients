@@ -1,6 +1,7 @@
 import { ClipboardEvent, useCallback, useRef } from 'react';
 import { Editor, Tldraw } from 'tldraw';
 import 'tldraw/tldraw.css';
+import { IngredientsPanel } from './components/IngredientsPanel';
 import { ImageIngredientShape } from './shapes/ImageIngredientShape';
 import { TextIngredientShape } from './shapes/TextIngredientShape';
 import './styles.css';
@@ -22,7 +23,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen w-screen bg-gray-100 p-4">
-      {/* Left side - TLDraw Canvas */}
+      {/* Center - TLDraw Canvas */}
       <div className="flex-1 relative mr-4">
         <div 
           className="absolute inset-0 bg-white rounded-2xl shadow-2xl overflow-hidden"
@@ -31,12 +32,13 @@ export default function App() {
           <Tldraw
             autoFocus={true} 
             persistenceKey="my-persistence-key"
-            hideUi={false}
             shapeUtils={customShapeUtils}
             onMount={(editor) => {
               editorRef.current = editor;
             }}
-          />
+          >
+            <IngredientsPanel />
+          </Tldraw>
         </div>
       </div>
 
