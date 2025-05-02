@@ -1,0 +1,1276 @@
+TITLE: Implementing PDF Editor Component with tldraw in TypeScript React
+DESCRIPTION: This code snippet defines a React component for a basic PDF editor using tldraw. It includes camera options, constraints, and event handlers for zooming and panning. The component renders a tldraw Editor with custom tools and UI components.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/examples/src/examples/pdf-editor/README.md#2025-04-16_snippet_0
+
+LANGUAGE: tsx
+CODE:
+```
+import * as React from 'react'
+import {
+	TldrawEditor,
+	TldrawUiComponents,
+	TldrawUiContextProvider,
+	Toolbar,
+	UiComponentsProvider,
+	useActions,
+	useEditor,
+	useKeyboardShortcuts,
+	useTool,
+	useTools,
+	ZoomMenu,
+} from '@tldraw/tldraw'
+import '@tldraw/tldraw/tldraw.css'
+
+export default function PdfEditorExample() {
+	const [pdfUrl, setPdfUrl] = React.useState(
+		'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf'
+	)
+
+	return (
+		<div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column' }}>
+			<div>
+				<input
+					type="text"
+					value={pdfUrl}
+					onChange={(e) => setPdfUrl(e.target.value)}
+					style={{ width: '100%' }}
+				/>
+			</div>
+			<div style={{ flexGrow: 1, width: '100%', height: '100%', overflow: 'hidden' }}>
+				<TldrawEditor
+					sharedDocument={false}
+					initialState={{
+						shapes: {
+							pdf: {
+								type: 'image',
+								url: pdfUrl,
+								w: 600,
+								h: 800,
+								x: 0,
+								y: 0,
+							},
+						},
+					}}
+					cameraOptions={{
+						viewportGap: 75,
+						snap: {
+							camera: 'view',
+						},
+					}}
+					constraints={{
+						minScale: 0.1,
+						maxScale: 8,
+					}}
+				>
+					<TldrawUiContextProvider>
+						<UiComponentsProvider components={TldrawUiComponents}>
+							<PdfEditor />
+						</UiComponentsProvider>
+					</TldrawUiContextProvider>
+				</TldrawEditor>
+			</div>
+		</div>
+	)
+}
+
+function PdfEditor() {
+	const editor = useEditor()
+	const actions = useActions()
+	const tools = useTools()
+	const { useZoom } = useTool('zoom')
+	useKeyboardShortcuts()
+
+	const onPan = React.useCallback(
+		(dx: number, dy: number) => {
+			editor.pan(dx, dy)
+		},
+		[editor]
+	)
+
+	const onZoom = React.useCallback(
+		(delta: number, point: { x: number; y: number }) => {
+			editor.zoomToCursor(delta, point)
+		},
+		[editor]
+	)
+
+	useZoom(useZoom, useZoom, useZoom)
+
+	return (
+		<>
+			<Toolbar
+				items={[
+					{
+						type: 'item',
+						icon: 'tool-pointer',
+						label: 'Select',
+						onClick: () => editor.setSelectedTool('select'),
+						Selected: () => editor.getCurrentToolId() === 'select',
+					},
+					{
+						type: 'item',
+						icon: 'tool-hand',
+						label: 'Hand',
+						onClick: () => editor.setSelectedTool('hand'),
+						Selected: () => editor.getCurrentToolId() === 'hand',
+					},
+					{
+						type: 'item',
+						icon: 'tool-draw',
+						label: 'Draw',
+						onClick: () => editor.setSelectedTool('draw'),
+						Selected: () => editor.getCurrentToolId() === 'draw',
+					},
+					{
+						type: 'item',
+						icon: 'tool-eraser',
+						label: 'Erase',
+						onClick: () => editor.setSelectedTool('eraser'),
+						Selected: () => editor.getCurrentToolId() === 'eraser',
+					},
+				]}
+			/>
+			<ZoomMenu
+				onZoomIn={actions.zoomIn}
+				onZoomOut={actions.zoomOut}
+				onZoomTo={actions.zoomTo}
+				onResetZoom={actions.resetZoom}
+			/>
+		</>
+	)
+}
+```
+
+----------------------------------------
+
+TITLE: Customizing Keyboard Shortcuts in tldraw with TypeScript
+DESCRIPTION: This code snippet demonstrates how to override default keyboard shortcuts and add new ones in tldraw. It includes custom shortcuts for toggling grid visibility, selecting the Draw tool, and copying as PNG. The example uses the Tldraw component with a customized store.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/examples/src/examples/keyboard-shortcuts/README.md#2025-04-16_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+import * as React from 'react'
+import { Tldraw, createTldrawStore, defaultShapeUtils } from '@tldraw/tldraw'
+import '@tldraw/tldraw/tldraw.css'
+
+export default function KeyboardShortcutsExample() {
+	const store = createTldrawStore({
+		shapeUtils: defaultShapeUtils,
+	})
+
+	const [isGridMode, setIsGridMode] = React.useState(false)
+
+	return (
+		<div className="tldraw__editor">
+			<Tldraw
+				store={store}
+				shapeUtils={defaultShapeUtils}
+				overrides={{
+					store: {
+						// Override the grid mode
+						get gridMode() {
+							return isGridMode
+						},
+					},
+					actions: {
+						// Add a new action
+						'toggle-grid': {
+							onSelect: () => {
+								setIsGridMode(!isGridMode)
+							},
+						},
+					},
+					tools: {
+						'copy-as-png': {
+							onSelect: () => {
+								store.copyAs('png')
+							},
+						},
+					},
+					keyboardShortcutsOverrides: {
+						'toggle-grid': {
+							keys: ['x'],
+						},
+						draw: {
+							keys: ['p'],
+						},
+						'copy-as-png': {
+							keys: ['ctrl+1', 'cmd+1'],
+						},
+					},
+				}}
+			/>
+		</div>
+	)
+}
+```
+
+----------------------------------------
+
+TITLE: Configuring Frame Shape in tldraw with TypeScript
+DESCRIPTION: This code snippet demonstrates how to use ShapeUtil.configure to customize the built-in 'frame' shape in tldraw. It adds support for colorful borders and labels by extending the default options.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/examples/src/examples/configure-shape-util/README.md#2025-04-16_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+import { Tldraw, TLComponents, TLShape, useEditor, Editor } from '@tldraw/tldraw'
+import '@tldraw/tldraw/tldraw.css'
+
+const CustomFrame = TLComponents.FrameShapeUtil.configure({
+	// Add color to the shape's props
+	props: (props) => ({
+		...props,
+		color: { type: 'string', default: 'black' },
+	}),
+	// Use the color in the shape's component
+	component(shape) {
+		const bounds = this.bounds(shape)
+		return (
+			<>
+				<rect
+					width={bounds.width}
+					height={bounds.height}
+					fill="none"
+					stroke={shape.props.color}
+					stroke-width={4}
+				/>
+				<text x={4} y={20} fill={shape.props.color}>
+					{shape.props.name}
+				</text>
+			</>
+		)
+	},
+})
+
+function ShapesMenu() {
+	const editor = useEditor()
+
+	function insertColoredFrame(color: string) {
+		const { width, height } = editor.viewportScreenBounds
+		editor.createShape<TLShape>({
+			type: 'frame',
+			x: width / 2,
+			y: height / 2,
+			props: { w: 200, h: 200, color },
+		})
+	}
+
+	return (
+		<div style={{ position: 'absolute', top: 64, left: 10 }}>
+			<button onClick={() => insertColoredFrame('red')}>Red Frame</button>
+			<button onClick={() => insertColoredFrame('blue')}>Blue Frame</button>
+			<button onClick={() => insertColoredFrame('green')}>Green Frame</button>
+		</div>
+	)
+}
+
+export default function ConfigureShapeUtilExample() {
+	return (
+		<div className="tldraw__editor">
+			<Tldraw
+				shapeUtils={{
+					frame: CustomFrame,
+				}}
+				components={{
+					TopPanel: ShapesMenu,
+				}}
+			/>
+		</div>
+	)
+}
+```
+
+----------------------------------------
+
+TITLE: Defining Abstract Geometry2d Class for TLDraw
+DESCRIPTION: An abstract class that provides the foundation for 2D geometric shapes in TLDraw. It includes methods for hit testing, distance calculations, transformations, and other geometry operations common to all shapes.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/packages/editor/api-report.api.md#2025-04-16_snippet_25
+
+LANGUAGE: typescript
+CODE:
+```
+export abstract class Geometry2d {
+    constructor(opts: Geometry2dOptions);
+    // (undocumented)
+    get area(): number;
+    // (undocumented)
+    get bounds(): Box;
+    // (undocumented)
+    get center(): Vec;
+    // (undocumented)
+    debugColor?: string;
+    // (undocumented)
+    distanceToLineSegment(A: Vec, B: Vec, filters?: Geometry2dFilters): number;
+    // (undocumented)
+    distanceToPoint(point: Vec, hitInside?: boolean, filters?: Geometry2dFilters): number;
+    // (undocumented)
+    getArea(): number;
+    // (undocumented)
+    getBounds(): Box;
+    // (undocumented)
+    getLength(): number;
+    // (undocumented)
+    abstract getSvgPathData(first: boolean): string;
+    // (undocumented)
+    abstract getVertices(filters: Geometry2dFilters): Vec[];
+    // (undocumented)
+    hitTestLineSegment(A: Vec, B: Vec, distance?: number, filters?: Geometry2dFilters): boolean;
+    // (undocumented)
+    hitTestPoint(point: Vec, margin?: number, hitInside?: boolean, _filters?: Geometry2dFilters): boolean;
+    // (undocumented)
+    ignore?: boolean;
+    // (undocumented)
+    intersectCircle(center: VecLike, radius: number, _filters?: Geometry2dFilters): VecLike[];
+    // (undocumented)
+    intersectLineSegment(A: VecLike, B: VecLike, _filters?: Geometry2dFilters): VecLike[];
+    // (undocumented)
+    intersectPolygon(polygon: VecLike[], _filters?: Geometry2dFilters): VecLike[];
+    // (undocumented)
+    intersectPolyline(polyline: VecLike[], _filters?: Geometry2dFilters): VecLike[];
+    // (undocumented)
+    isClosed: boolean;
+    // (undocumented)
+    isExcludedByFilter(filters?: Geometry2dFilters): boolean;
+    // (undocumented)
+    isFilled: boolean;
+    // (undocumented)
+    isInternal: boolean;
+    // (undocumented)
+    isLabel: boolean;
+    // (undocumented)
+    isPointInBounds(point: Vec, margin?: number): boolean;
+    // (undocumented)
+    get length(): number;
+    // (undocumented)
+    abstract nearestPoint(point: Vec, _filters?: Geometry2dFilters): Vec;
+    // @deprecated (undocumented)
+    nearestPointOnLineSegment(A: Vec, B: Vec): Vec;
+    // (undocumented)
+    toSimpleSvgPath(): string;
+    // (undocumented)
+    transform(transform: MatModel, opts?: TransformedGeometry2dOptions): Geometry2d;
+    // (undocumented)
+    get vertices(): Vec[];
+}
+```
+
+----------------------------------------
+
+TITLE: Programmatically Controlling the tldraw Canvas with the Editor API
+DESCRIPTION: Example demonstrating how to use the Editor API to programmatically control the tldraw canvas. This code creates a text shape, selects it, and then zooms to the selection with animation.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/docs/content/getting-started/quick-start.mdx#2025-04-16_snippet_5
+
+LANGUAGE: tsx
+CODE:
+```
+import { Tldraw, toRichText } from 'tldraw'
+import 'tldraw/tldraw.css'
+
+export default function App() {
+	const handleMount = (editor) => {
+		editor.createShape({
+			type: 'text',
+			x: 200,
+			y: 200,
+			props: {
+				richText: toRichText('Hello world!'),
+			},
+		})
+
+		editor.selectAll()
+
+		editor.zoomToSelection({
+			animation: { duration: 5000 },
+		})
+	}
+
+	return (
+		<div style={{ position: 'fixed', inset: 0 }}>
+			<Tldraw onMount={handleMount} />
+		</div>
+	)
+}
+```
+
+----------------------------------------
+
+TITLE: Installing tldraw Package in a React Project
+DESCRIPTION: Command to install the tldraw package from NPM, which is the first step in implementing tldraw in a React project.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/docs/content/getting-started/quick-start.mdx#2025-04-16_snippet_0
+
+LANGUAGE: bash
+CODE:
+```
+npm install tldraw
+```
+
+----------------------------------------
+
+TITLE: Defining ShapeUtil Abstract Class for Custom Shape Behavior in TypeScript
+DESCRIPTION: An abstract class that defines the behavior for a custom shape type in the editor. It includes methods for handling various shape operations like binding, cropping, resizing, and rendering, serving as a base for shape-specific utilities.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/packages/editor/api-report.api.md#2025-04-16_snippet_53
+
+LANGUAGE: TypeScript
+CODE:
+```
+export abstract class ShapeUtil<Shape extends TLUnknownShape = TLUnknownShape> {
+    constructor(editor: Editor);
+    // @internal
+    backgroundComponent?(shape: Shape): any;
+    canBeLaidOut(_shape: Shape, _info: TLShapeUtilCanBeLaidOutOpts): boolean;
+    canBind(_opts: TLShapeUtilCanBindOpts): boolean;
+    canCrop(_shape: Shape): boolean;
+    canDropShapes(_shape: Shape, _shapes: TLShape[]): boolean;
+    canEdit(_shape: Shape): boolean;
+    canEditInReadOnly(_shape: Shape): boolean;
+    canReceiveNewChildrenOfType(_shape: Shape, _type: TLShape['type']): boolean;
+    canResize(_shape: Shape): boolean;
+    canScroll(_shape: Shape): boolean;
+    canSnap(_shape: Shape): boolean;
+    canTabTo(_shape: Shape): boolean;
+    abstract component(shape: Shape): any;
+    static configure<T extends TLShapeUtilConstructor<any, any>>(this: T, options: T extends new (...args: any[]) => {
+        options: infer Options;
+    } ? Partial<Options> : never): T;
+    // (undocumented)
+    editor: Editor;
+    // @internal (undocumented)
+    expandSelectionOutlinePx(shape: Shape): Box | number;
+    // (undocumented)
+    getAriaDescriptor(_shape: Shape): string | undefined;
+    getBoundsSnapGeometry(_shape: Shape): BoundsSnapGeometry;
+    getCanvasSvgDefs(): TLShapeUtilCanvasSvgDef[];
+    abstract getDefaultProps(): Shape['props'];
+    getFontFaces(shape: Shape): TLFontFace[];
+    abstract getGeometry(shape: Shape, opts?: TLGeometryOpts): Geometry2d;
+    getHandles?(shape: Shape): TLHandle[];
+    getHandleSnapGeometry(_shape: Shape): HandleSnapGeometry;
+}
+```
+
+----------------------------------------
+
+TITLE: Implementing Basic tldraw Canvas in React
+DESCRIPTION: Basic implementation of the tldraw canvas in a React component. This code creates a full-screen canvas with the default shapes, tools, and user interface.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/docs/content/getting-started/quick-start.mdx#2025-04-16_snippet_1
+
+LANGUAGE: tsx
+CODE:
+```
+import { Tldraw } from 'tldraw'
+import 'tldraw/tldraw.css'
+
+export default function App() {
+	return (
+		<div style={{ position: 'fixed', inset: 0 }}>
+			<Tldraw />
+		</div>
+	)
+}
+```
+
+----------------------------------------
+
+TITLE: Defining TldrawProps Interface in TypeScript
+DESCRIPTION: Type definition for TldrawProps that combines base props with editor store props. These props are used for the main Tldraw component to initialize and configure the drawing editor.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/packages/tldraw/api-report.api.md#2025-04-16_snippet_31
+
+LANGUAGE: TypeScript
+CODE:
+```
+export type TldrawProps = TldrawBaseProps & TldrawEditorStoreProps;
+```
+
+----------------------------------------
+
+TITLE: Type Definitions for Core tldraw Components
+DESCRIPTION: Comprehensive type definitions for the tldraw application including shapes, assets, instances and state management. Includes interfaces for different shape types, instance management, presence tracking and data structures.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/packages/tlschema/api-report.api.md#2025-04-16_snippet_21
+
+LANGUAGE: typescript
+CODE:
+```
+export type TLGroupShape = TLBaseShape<'group', TLGroupShapeProps>;
+
+export interface TLGroupShapeProps {
+}
+
+export interface TLHandle {
+    canSnap?: boolean;
+    id: string;
+    index: IndexKey;
+    type: TLHandleType;
+    x: number;
+    y: number;
+}
+
+export type TLHandleType = SetValue<typeof TL_HANDLE_TYPES>;
+
+export type TLHighlightShape = TLBaseShape<'highlight', TLHighlightShapeProps>;
+
+export interface TLHighlightShapeProps {
+    color: TLDefaultColorStyle;
+    isComplete: boolean;
+    isPen: boolean;
+    scale: number;
+    segments: TLDrawShapeSegment[];
+    size: TLDefaultSizeStyle;
+}
+
+export type TLImageAsset = TLBaseAsset<'image', {
+    fileSize?: number;
+    h: number;
+    isAnimated: boolean;
+    mimeType: null | string;
+    name: string;
+    src: null | string;
+    w: number;
+}>;
+```
+
+----------------------------------------
+
+TITLE: Implementing Editable Custom Shape in Tldraw with TypeScript and React
+DESCRIPTION: This code snippet demonstrates the implementation of an editable custom shape in Tldraw. It includes the shape's properties, rendering logic, and editing functionality. The shape displays an emoji that can be changed when in the editing state.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/examples/src/examples/editable-shape/README.md#2025-04-16_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+import { BaseBoxShapeUtil, TLBaseShape, Vec2d } from '@tldraw/tldraw'
+
+type EditableShape = TLBaseShape<'editable', { emoji: string }>
+
+export class EditableShapeUtil extends BaseBoxShapeUtil<EditableShape> {
+	getDefaultProps(): EditableShape['props'] {
+		return {
+			w: 200,
+			h: 200,
+			emoji: '👋',
+		}
+	}
+
+	canEdit = () => true
+
+	component(shape: EditableShape) {
+		const bounds = this.bounds(shape)
+		const center = bounds.center
+
+		return (
+			<div
+				style={{
+					position: 'absolute',
+					top: 0,
+					left: 0,
+					width: bounds.width,
+					height: bounds.height,
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					pointerEvents: 'all',
+					fontSize: 64,
+				}}
+			>
+				{shape.props.emoji}
+			</div>
+		)
+	}
+
+	indicator(shape: EditableShape) {
+		return (
+			<rect
+				width={shape.props.w}
+				height={shape.props.h}
+				pointerEvents="none"
+			/>
+		)
+	}
+
+	extras(shape: EditableShape) {
+		const bounds = this.bounds(shape)
+		return (
+			<div
+				style={{
+					position: 'absolute',
+					top: `calc(${bounds.maxY}px + 16px)`,
+					left: bounds.minX,
+					fontFamily: 'sans-serif',
+					fontSize: 12,
+					color: 'var(--color-text)',
+					pointerEvents: 'none',
+				}}
+			>
+				Double click to edit
+			</div>
+		)
+	}
+
+	async onEditEnd(shape: EditableShape) {
+		const text = prompt('Enter a new emoji')
+		return {
+			...shape,
+			props: {
+				...shape.props,
+				emoji: text ?? shape.props.emoji,
+			},
+		}
+	}
+}
+```
+
+----------------------------------------
+
+TITLE: Store Loading and Snapshot Functions
+DESCRIPTION: Functions for loading state snapshots into TLStore instances, allowing application state to be restored from saved snapshots or session states.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/packages/editor/api-report.api.md#2025-04-16_snippet_42
+
+LANGUAGE: TypeScript
+CODE:
+```
+export function loadSessionStateSnapshotIntoStore(store: TLStore, snapshot: TLSessionStateSnapshot, opts?: TLLoadSessionStateSnapshotOptions): void;
+
+export function loadSnapshot(store: TLStore, _snapshot: Partial<TLEditorSnapshot> | TLStoreSnapshot, opts?: TLLoadSnapshotOptions): void;
+```
+
+----------------------------------------
+
+TITLE: Implementing Text Search in tldraw Editor with TypeScript
+DESCRIPTION: This code snippet demonstrates how to implement text search functionality in the tldraw editor using TypeScript. It utilizes the editor's API to search for text within shapes, highlight matching results, and provide navigation controls in the HelperButtons UI component.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/examples/src/examples/text-search/README.md#2025-04-16_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+./TextSearchExample.tsx
+```
+
+----------------------------------------
+
+TITLE: Implementing Client-Side Sync in React with tldraw
+DESCRIPTION: This code demonstrates how to implement the client side of tldraw sync in a React component. It shows how to create a sync client using the useSync hook, configure asset handling, and set up URL handling for bookmark shapes.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/docs/content/docs/sync.mdx#2025-04-16_snippet_0
+
+LANGUAGE: tsx
+CODE:
+```
+import { Tldraw, TLAssetStore, Editor } from 'tldraw'
+import { useSync } from '@tldraw/sync'
+import { uploadFileAndReturnUrl } from './assets'
+import { convertUrlToBookmarkAsset } from './unfurl'
+
+function MyEditorComponent({myRoomId}) {
+	// This hook creates a sync client that manages the websocket connection to the server
+	// and coordinates updates to the document state.
+	const store = useSync({
+		// This is how you tell the sync client which server and room to connect to.
+		uri: `wss://my-custom-backend.com/connect/${myRoomId}`,
+		// This is how you tell the sync client how to store and retrieve blobs.
+		assets: myAssetStore,
+	})
+	// When the tldraw Editor mounts, you can register an asset handler for the bookmark URLs.
+	return <Tldraw store={store} onMount={registerUrlHandler} />
+}
+
+const myAssetStore: TLAssetStore {
+	upload(file, asset) {
+		return uploadFileAndReturnUrl(file)
+	},
+	resolve(asset) {
+		return asset.props.src
+	},
+}
+
+function registerUrlHandler(editor: Editor) {
+	editor.registerExternalAssetHandler('url', async ({url}) => {
+		return await convertUrlToBookmarkAsset(url)
+	})
+}
+```
+
+----------------------------------------
+
+TITLE: Initializing TLDraw Editor with onMount
+DESCRIPTION: Example showing how to access the editor instance through the Tldraw component's onMount callback.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/docs/content/docs/editor.mdx#2025-04-16_snippet_0
+
+LANGUAGE: tsx
+CODE:
+```
+function App() {
+	return (
+		<Tldraw
+			onMount={(editor) => {
+				// your editor code here
+			}}
+		/>
+	)
+}
+```
+
+----------------------------------------
+
+TITLE: Store Class Definition in TypeScript
+DESCRIPTION: Core Store class implementation with methods for CRUD operations, history tracking, and query capabilities. Includes type parameters for record types and store properties.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/packages/store/api-report.api.md#2025-04-16_snippet_4
+
+LANGUAGE: typescript
+CODE:
+```
+export class Store<R extends UnknownRecord = UnknownRecord, Props = unknown> {
+    constructor(config: {
+        schema: StoreSchema<R, Props>;
+        initialData?: SerializedStore<R>;
+        id?: string;
+        props: Props;
+    });
+    allRecords(): R[];
+    applyDiff(diff: RecordsDiff<R>, { runCallbacks, ignoreEphemeralKeys, }?: {
+        ignoreEphemeralKeys?: boolean;
+        runCallbacks?: boolean;
+    }): void;
+    get<K extends IdOf<R>>(id: K): RecordFromId<K> | undefined;
+    put(records: R[], phaseOverride?: 'initialize'): void;
+    remove(ids: IdOf<R>[]): void;
+    update<K extends IdOf<R>>(id: K, updater: (record: RecordFromId<K>) => RecordFromId<K>): void;
+}
+```
+
+----------------------------------------
+
+TITLE: Adding Local Persistence to tldraw Canvas
+DESCRIPTION: Enhanced implementation with local persistence using the persistenceKey prop. This enables the canvas state to survive browser refreshes and synchronize between browser tabs.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/docs/content/getting-started/quick-start.mdx#2025-04-16_snippet_2
+
+LANGUAGE: tsx
+CODE:
+```
+export default function App() {
+	return (
+		<div style={{ position: 'fixed', inset: 0 }}>
+			<Tldraw persistenceKey="example" />
+		</div>
+	)
+}
+```
+
+----------------------------------------
+
+TITLE: Adding Time-Based Permissions Logic to TLDraw Shapes
+DESCRIPTION: Implementation showing how to add custom permissions to TLDraw shapes using meta properties and time-based conditions. The code demonstrates preventing shape updates after 5 seconds from creation and only allowing deletion after 5 seconds.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/examples/src/examples/permissions-example/README.md#2025-04-16_snippet_0
+
+LANGUAGE: tsx
+CODE:
+```
+import { Editor, TLShapeId, TLStore, computed } from '@tldraw/tldraw'
+import { track } from 'signia'
+
+// When shapes are created, add a `createdAt` property to their meta object
+export function setupPermissions(editor: Editor) {
+	editor.sideEffects.register({
+		onCreate: ({ shapes }) => {
+			for (const shape of shapes) {
+				editor.updateShape({
+					id: shape.id,
+					meta: { createdAt: Date.now() },
+				})
+			}
+		},
+	})
+
+	// Original change handler
+	const originalOnChange = editor.store.onCommand
+
+	// Our new change handler
+	editor.store.onCommand = (cmd) => {
+		if (cmd.type === 'update_shapes') {
+			for (const { id } of cmd.shapes) {
+				const shape = editor.getShape(id)
+				if (!shape) continue
+
+				const createdAt = shape.meta?.createdAt ?? Date.now()
+				const age = Date.now() - createdAt
+
+				// Prevent changes to shapes older than 5 seconds
+				if (age > 5000) {
+					return
+				}
+			}
+		}
+
+		if (cmd.type === 'delete_shapes') {
+			for (const { id } of cmd.shapes) {
+				const shape = editor.getShape(id)
+				if (!shape) continue
+
+				const createdAt = shape.meta?.createdAt ?? Date.now()
+				const age = Date.now() - createdAt
+
+				// Prevent deletion of shapes younger than 5 seconds
+				if (age < 5000) {
+					return
+				}
+			}
+		}
+
+		// Allow the change to go through
+		return originalOnChange.call(editor.store, cmd)
+	}
+}
+```
+
+----------------------------------------
+
+TITLE: Implementing Error Boundary for TLDraw Shapes in TypeScript
+DESCRIPTION: This code snippet represents an error boundary component for TLDraw shapes. It catches errors in individual shapes to prevent the entire editor from crashing when something goes wrong in a specific shape.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/examples/src/examples/error-boundary/README.md#2025-04-16_snippet_0
+
+LANGUAGE: TypeScript
+CODE:
+```
+./ErrorBoundaryExample.tsx
+```
+
+----------------------------------------
+
+TITLE: Basic tldraw React Component Implementation
+DESCRIPTION: Basic example showing how to import and use the Tldraw component in a React application. Requires importing both the component and its associated CSS styles.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/packages/tldraw/README.md#2025-04-16_snippet_1
+
+LANGUAGE: tsx
+CODE:
+```
+import { Tldraw } from 'tldraw'
+import 'tldraw/tldraw.css'
+
+export default function () {
+	return <Tldraw />
+}
+```
+
+----------------------------------------
+
+TITLE: Using Custom Shapes in tldraw Component
+DESCRIPTION: Demonstrates how to pass custom shape utils to the Tldraw component and create a custom shape using the Editor API.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/docs/content/docs/shapes.mdx#2025-04-16_snippet_2
+
+LANGUAGE: tsx
+CODE:
+```
+const MyCustomShapes = [CardShapeUtil]
+
+export default function () {
+	return (
+		<div style={{ position: 'fixed', inset: 0 }}>
+			<Tldraw
+				shapeUtils={MyCustomShapes}
+				onMount={(editor) => {
+					editor.createShapes([{ type: 'card' }])
+				}}
+			/>
+		</div>
+	)
+}
+```
+
+----------------------------------------
+
+TITLE: Defining UI-Related Components and Functions in TypeScript
+DESCRIPTION: Functions related to UI components and user interactions, including menu components, event handling, and DOM operations like pointer capture and window management.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/packages/editor/api-report.api.md#2025-04-16_snippet_55
+
+LANGUAGE: TypeScript
+CODE:
+```
+export function MenuClickCapture(): false | JSX_2.Element;
+export function normalizeWheel(event: React.WheelEvent<HTMLElement> | WheelEvent): {
+    x: number;
+    y: number;
+    z: number;
+};
+export function openWindow(url: string, target?: string): void;
+export function OptionalErrorBoundary({ children, fallback, ...props }: Omit<TLErrorBoundaryProps, 'fallback'> & {
+    fallback: TLErrorFallbackComponent;
+}): boolean | JSX_2.Element | Iterable<React_3.ReactNode> | null | number | string | undefined;
+```
+
+----------------------------------------
+
+TITLE: Implementing Custom Paste Handler for Single Frame Shapes in tldraw (TypeScript/TSX)
+DESCRIPTION: This code snippet demonstrates how to create a custom paste handler for tldraw. It specifically targets single frame shapes, modifying their paste behavior to find an empty space rather than using the original copy location. The example utilizes tldraw's external content handler to achieve this customization.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/examples/src/examples/custom-paste/README.md#2025-04-16_snippet_0
+
+LANGUAGE: TypeScript
+CODE:
+```
+./CustomPasteExample.tsx
+```
+
+----------------------------------------
+
+TITLE: Installing tldraw Sync Package for Real-time Collaboration
+DESCRIPTION: Command to install the @tldraw/sync package, which enables real-time collaboration features in tldraw applications.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/docs/content/getting-started/quick-start.mdx#2025-04-16_snippet_3
+
+LANGUAGE: bash
+CODE:
+```
+npm install @tldraw/sync
+```
+
+----------------------------------------
+
+TITLE: Implementing Custom BindingUtil Class in TypeScript
+DESCRIPTION: This snippet demonstrates how to create a custom BindingUtil class for a 'StickerBinding'. It includes methods for setting default props and handling shape changes.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/docs/content/docs/editor.mdx#2025-04-16_snippet_8
+
+LANGUAGE: typescript
+CODE:
+```
+import { BindingUtil } from 'tldraw'
+
+class StickerBindingUtil extends BindingUtil<StickerBinding> {
+	static override type = 'sticker' as const
+
+	override getDefaultProps() {
+		return { x: 0.5, y: 0.5 }
+	}
+
+	override onAfterChangeToShape({ binding }) {
+		const sticker = this.editor.getShape(binding.fromShape)
+
+		// move the sticker so it stays attached to the to shape
+	}
+}
+```
+
+----------------------------------------
+
+TITLE: Utility Functions for SVG Path Generation in TLDraw
+DESCRIPTION: Functions for generating SVG path data from points, including getSvgPathFromPoints which creates a path string from a series of points with optional closure.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/packages/editor/api-report.api.md#2025-04-16_snippet_28
+
+LANGUAGE: typescript
+CODE:
+```
+export function getSvgPathFromPoints(points: VecLike[], closed?: boolean): string;
+```
+
+----------------------------------------
+
+TITLE: Using Tldraw Component with License Key
+DESCRIPTION: Example of using the Tldraw component with a business license key to disable the "Made with tldraw" link.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/docs/content/getting-started/installation.mdx#2025-04-16_snippet_6
+
+LANGUAGE: tsx
+CODE:
+```
+<Tldraw licenseKey={YOUR_LICENSE_KEY} />
+```
+
+----------------------------------------
+
+TITLE: Implementing Multiple Tldraw Editors in React
+DESCRIPTION: This code snippet demonstrates how to create a React component that renders multiple Tldraw editors on a single page. It uses the Tldraw component and manages focus state for each editor.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/examples/src/examples/multiple/README.md#2025-04-16_snippet_0
+
+LANGUAGE: TSX
+CODE:
+```
+import * as React from 'react'
+import { Tldraw } from '@tldraw/tldraw'
+import '@tldraw/tldraw/tldraw.css'
+
+export default function MultipleExample() {
+	const [focusedEditor, setFocusedEditor] = React.useState<null | 1 | 2>(null)
+
+	return (
+		<div style={{ display: 'flex', padding: 32, gap: 32 }}>
+			<div
+				style={{
+					width: 500,
+					height: 500,
+					outline: focusedEditor === 1 ? '2px solid blue' : 'none',
+				}}
+			>
+				<Tldraw
+					autofocus
+					onMount={(editor) => {
+						editor.updateInstanceState({ isReadonly: false })
+					}}
+					onFocus={() => setFocusedEditor(1)}
+				/>
+			</div>
+			<div
+				style={{
+					width: 500,
+					height: 500,
+					outline: focusedEditor === 2 ? '2px solid blue' : 'none',
+				}}
+			>
+				<Tldraw
+					autofocus
+					onMount={(editor) => {
+						editor.updateInstanceState({ isReadonly: false })
+					}}
+					onFocus={() => setFocusedEditor(2)}
+				/>
+			</div>
+		</div>
+	)
+}
+```
+
+----------------------------------------
+
+TITLE: Implementing Tldraw Component in React
+DESCRIPTION: This example shows how to use the Tldraw component as a regular React component in your project. The component is set up to take up the full height and width of its container. Note that by default, the component doesn't persist data between refreshes.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/examples/src/examples/basic/README.md#2025-04-16_snippet_0
+
+LANGUAGE: tsx
+CODE:
+```
+./BasicExample.tsx
+```
+
+----------------------------------------
+
+TITLE: HistoryManager Class Implementation
+DESCRIPTION: A class that manages history operations for an editor, enabling undo/redo functionality. It tracks state changes and provides methods for batching operations, marking history points, and navigating through history.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/packages/editor/api-report.api.md#2025-04-16_snippet_33
+
+LANGUAGE: TypeScript
+CODE:
+```
+export class HistoryManager<R extends UnknownRecord> {
+    constructor(opts: {
+        annotateError?(error: unknown): void;
+        store: Store<R>;
+    });
+    // (undocumented)
+    bail(): this;
+    // (undocumented)
+    bailToMark(id: string): this;
+    // (undocumented)
+    batch(fn: () => void, opts?: TLHistoryBatchOptions): this;
+    // (undocumented)
+    clear(): void;
+    // @internal (undocumented)
+    debug(): {
+        pendingDiff: {
+            diff: RecordsDiff<R>;
+            isEmpty: boolean;
+        };
+        redos: (NonNullable<TLHistoryEntry<R>> | undefined)[];
+        state: string;
+        undos: (NonNullable<TLHistoryEntry<R>> | undefined)[];
+    };
+    // (undocumented)
+    readonly dispose: () => void;
+    // @internal (undocumented)
+    getMarkIdMatching(idSubstring: string): null | string;
+    // (undocumented)
+    getNumRedos(): number;
+    // (undocumented)
+    getNumUndos(): number;
+    // @internal (undocumented)
+    _isInBatch: boolean;
+    // @internal (undocumented)
+    _mark(id: string): void;
+    // (undocumented)
+    redo(): this;
+    // (undocumented)
+    squashToMark(id: string): this;
+    // (undocumented)
+    undo(): this;
+    // (undocumented)
+    _undo({ pushToRedoStack, toMark }: {
+        pushToRedoStack: boolean;
+        toMark?: string;
+    }): this;
+}
+```
+
+----------------------------------------
+
+TITLE: Managing Records in TypeScript with @tldraw/store RecordStore
+DESCRIPTION: This code demonstrates various operations on a RecordStore, including creating, adding, updating, and removing records. It showcases the flexibility of the store in handling different record types.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/packages/store/README.md#2025-04-16_snippet_3
+
+LANGUAGE: typescript
+CODE:
+```
+const tolkeinId = Author.createCustomId('tolkein')
+
+store.put([
+	Author.create({
+		id: jrrTolkeinId,
+		name: 'J.R.R Tolkein',
+	}),
+])
+
+store.update(tolkeinId, (author) => ({
+	...author,
+	name: 'DJJ Tolkz',
+	isPseudonym: true,
+}))
+
+store.remove(tolkeinId)
+```
+
+----------------------------------------
+
+TITLE: Implementing Tldraw Component with Editor Context in TSX
+DESCRIPTION: This code snippet shows the implementation of the main Tldraw component, which sets up the editor and provides it to child components via the EditorContext.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/examples/src/examples/external-ui-context/README.md#2025-04-16_snippet_1
+
+LANGUAGE: tsx
+CODE:
+```
+import { Tldraw, useEditor as useTldrawEditor } from '@tldraw/tldraw'
+import { EditorContext } from './EditorContext'
+
+export default function TldrawComponent() {
+	return (
+		<Tldraw>
+			<InnerTldrawComponent />
+		</Tldraw>
+	)
+}
+
+function InnerTldrawComponent() {
+	const editor = useTldrawEditor()
+	return (
+		<EditorContext.Provider value={editor}>
+			<ExternalControls />
+		</EditorContext.Provider>
+	)
+}
+```
+
+----------------------------------------
+
+TITLE: Preventing Grid Mode Changes in tldraw using TypeScript
+DESCRIPTION: This code snippet demonstrates how to use the Editor's side effects API in tldraw to prevent changes to the 'isGridMode' property of the instance. It sets up a side effect that checks for changes to the instance record and cancels any attempt to turn off grid mode.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/examples/src/examples/prevent-instance-change/README.md#2025-04-16_snippet_0
+
+LANGUAGE: TypeScript
+CODE:
+```
+import { Editor, TLEventMapHandler, useEditor } from '@tldraw/tldraw'
+import { useEffect } from 'react'
+
+export default function PreventInstanceChangeExample() {
+	const editor = useEditor()
+
+	useEffect(() => {
+		const handleInstanceChange: TLEventMapHandler<'instance-change'> = (change) => {
+			if (change.isPaused) return
+
+			if (change.changes.isGridMode === false) {
+				change.cancel()
+			}
+		}
+
+		editor.sideEffects.registerBeforeHandler('instance-change', handleInstanceChange)
+
+		return () => {
+			editor.sideEffects.unregisterBeforeHandler('instance-change', handleInstanceChange)
+		}
+	}, [editor])
+
+	return null
+}
+```
+
+----------------------------------------
+
+TITLE: Installing tldraw Package with npm
+DESCRIPTION: Command to install the tldraw package using npm package manager.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/docs/content/getting-started/installation.mdx#2025-04-16_snippet_0
+
+LANGUAGE: bash
+CODE:
+```
+npm i tldraw
+```
+
+----------------------------------------
+
+TITLE: Using Self-Hosted Assets with Tldraw
+DESCRIPTION: Example of using self-hosted assets with the Tldraw component using the getAssetUrls helper function.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/docs/content/getting-started/installation.mdx#2025-04-16_snippet_9
+
+LANGUAGE: tsx
+CODE:
+```
+import { getAssetUrls } from '@tldraw/assets/selfHosted'
+
+const assetUrls = getAssetUrls()
+
+<Tldraw assetUrls={assetUrls} />
+```
+
+----------------------------------------
+
+TITLE: Loading and Saving tldraw Editor Contents with Local Storage in TypeScript/TSX
+DESCRIPTION: This code snippet demonstrates how to implement local storage functionality for the tldraw editor. It loads the editor contents from localStorage on component mount and saves changes back to localStorage using a debounced function.
+SOURCE: https://github.com/tldraw/tldraw/blob/main/apps/examples/src/examples/local-storage/README.md#2025-04-16_snippet_0
+
+LANGUAGE: tsx
+CODE:
+```
+import * as React from 'react'
+import { Tldraw, useEditor, TLUiEventHandler } from '@tldraw/tldraw'
+import { debounce } from './debounce'
+
+const STORAGE_KEY = 'tldraw-localStorage-example'
+
+export default function LocalStorageExample() {
+	const [snapshot, setSnapshot] = React.useState<string | null>(null)
+
+	React.useEffect(() => {
+		const savedSnapshot = localStorage.getItem(STORAGE_KEY)
+		if (savedSnapshot) {
+			setSnapshot(savedSnapshot)
+		}
+	}, [])
+
+	const handleMount: TLUiEventHandler = React.useCallback((editor) => {
+		const savedSnapshot = localStorage.getItem(STORAGE_KEY)
+		if (savedSnapshot) {
+			editor.loadSnapshot(JSON.parse(savedSnapshot))
+		}
+	}, [])
+
+	const editor = useEditor()
+
+	const handleChanges = React.useCallback(
+		debounce(() => {
+			if (!editor) return
+			const snapshot = JSON.stringify(editor.store.getSnapshot())
+			localStorage.setItem(STORAGE_KEY, snapshot)
+		}, 500),
+		[editor]
+	)
+
+	React.useEffect(() => {
+		if (!editor) return
+		editor.on('change', handleChanges)
+		return () => {
+			editor.off('change', handleChanges)
+		}
+	}, [editor, handleChanges])
+
+	return (
+		<div className="tldraw__editor">
+			<Tldraw
+				snapshot={snapshot ? JSON.parse(snapshot) : undefined}
+				onMount={handleMount}
+			/>
+		</div>
+	)
+}
+```

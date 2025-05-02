@@ -1,6 +1,7 @@
 import { BaseBoxShapeUtil, HTMLContainer, RecordProps, T, TLBaseShape } from 'tldraw'
 import { useShapeIndex } from '../hooks/useShapeIndex'
-import { ShapeHeader } from './ShapeHeader'
+import { Comment, CommentValidator } from '../types/Comment'
+import { IngredientFooter } from './IngredientFooter'
 
 type IImageIngredientShape = TLBaseShape<
 	'image-ingredient-shape',
@@ -9,6 +10,7 @@ type IImageIngredientShape = TLBaseShape<
 		h: number
 		title: string
 		imageUrl: string
+		comments: Comment[]
 	}
 >
 
@@ -17,11 +19,13 @@ function ImageIngredientContent({
 	onTitleChange,
 	onDelete,
 	onImageUrlChange,
+	onAddComment,
 }: {
 	shape: IImageIngredientShape
 	onTitleChange: (newTitle: string) => void
 	onDelete: () => void
 	onImageUrlChange: (newImageUrl: string) => void
+	onAddComment: (text: string, isAI?: boolean) => void
 }) {
 	const getShapeIndex = useShapeIndex()
 	const index = getShapeIndex(shape.id)
@@ -47,26 +51,24 @@ function ImageIngredientContent({
 		}
 	}
 
+	// Calculate total height based on number of comments
+	const totalHeight = shape.props.h + (shape.props.comments.length * 50)
+
 	return (
 		<HTMLContainer
 			style={{
 				width: shape.props.w,
-				height: shape.props.h,
+				height: totalHeight,
 				pointerEvents: 'all',
-				background: 'white',
+				background: '#2C2C2C',
 				borderRadius: '12px',
-				boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
 				overflow: 'hidden',
 				display: 'flex',
 				flexDirection: 'column',
+				color: 'white',
 			}}
 		>
-			<ShapeHeader
-				title={shape.props.title}
-				onTitleChange={onTitleChange}
-				onDelete={onDelete}
-				index={index}
-			/>
+			{/* Main content */}
 			<div
 				style={{
 					flex: 1,
@@ -75,6 +77,9 @@ function ImageIngredientContent({
 					minHeight: 0,
 					margin: 0,
 					padding: 0,
+					background: 'white',
+					borderBottomLeftRadius: '12px',
+					borderBottomRightRadius: '12px',
 				}}
 				onPaste={handlePaste}
 				tabIndex={0}
@@ -88,6 +93,7 @@ function ImageIngredientContent({
 							height: '100%',
 							objectFit: 'contain',
 							display: 'block',
+							pointerEvents: 'none',
 						}}
 					/>
 				) : (
@@ -99,9 +105,10 @@ function ImageIngredientContent({
 							flexDirection: 'column',
 							alignItems: 'center',
 							justifyContent: 'center',
-							color: '#6b7280',
+							color: '#6B7280',
 							fontFamily: 'sans-serif',
 							padding: '16px',
+							pointerEvents: 'none',
 						}}
 					>
 						<div>No image uploaded</div>
@@ -117,12 +124,14 @@ function ImageIngredientContent({
 								width: '100%',
 								marginTop: '8px',
 								padding: '8px',
-								background: 'transparent',
+								background: '#F3F4F6',
 								border: 'none',
 								outline: 'none',
 								textAlign: 'center',
-								color: 'inherit',
+								color: '#374151',
 								fontFamily: 'inherit',
+								borderRadius: '6px',
+								pointerEvents: 'auto',
 							}}
 							onPointerDown={(e) => e.stopPropagation()}
 							onPointerUp={(e) => e.stopPropagation()}
@@ -132,6 +141,15 @@ function ImageIngredientContent({
 					</div>
 				)}
 			</div>
+
+			<IngredientFooter
+				title={shape.props.title}
+				comments={shape.props.comments}
+				index={index}
+				onTitleChange={onTitleChange}
+				onDelete={onDelete}
+				onAddComment={onAddComment}
+			/>
 		</HTMLContainer>
 	)
 }
@@ -143,6 +161,7 @@ export class ImageIngredientShape extends BaseBoxShapeUtil<IImageIngredientShape
 		h: T.number,
 		title: T.string,
 		imageUrl: T.string,
+		comments: T.arrayOf(CommentValidator),
 	}
 
 	getDefaultProps(): IImageIngredientShape['props'] {
@@ -151,6 +170,7 @@ export class ImageIngredientShape extends BaseBoxShapeUtil<IImageIngredientShape
 			h: 300,
 			title: '',
 			imageUrl: '',
+			comments: [],
 		}
 	}
 
@@ -174,7 +194,7 @@ export class ImageIngredientShape extends BaseBoxShapeUtil<IImageIngredientShape
 					img.onload = () => {
 						// Calculate dimensions while maintaining aspect ratio
 						const maxWidth = shape.props.w
-						const maxHeight = shape.props.h
+						const maxHeight = shape.props.h // Use h for aspect ratio calculation
 						let width = img.naturalWidth
 						let height = img.naturalHeight
 						
@@ -195,17 +215,35 @@ export class ImageIngredientShape extends BaseBoxShapeUtil<IImageIngredientShape
 								...shape.props, 
 								imageUrl: newImageUrl,
 								w: Math.round(width),
-								h: Math.round(height)
+								h: Math.round(height),
 							},
 						})
 					}
 					img.src = newImageUrl
+				}}
+				onAddComment={(text, isAI = false) => {
+					const newComment: Comment = {
+						id: Math.random().toString(36).substr(2, 9),
+						text,
+						createdAt: Date.now(),
+						isAI,
+					}
+					const newComments = [...shape.props.comments, newComment]
+					this.editor.updateShape<IImageIngredientShape>({
+						id: shape.id,
+						type: 'image-ingredient-shape',
+						props: {
+							...shape.props,
+							comments: newComments
+                        },
+					})
 				}}
 			/>
 		)
 	}
 
 	indicator(shape: IImageIngredientShape) {
-		return <rect width={shape.props.w} height={shape.props.h} rx={12} />
+		const totalHeight = shape.props.h + (shape.props.comments.length * 50)
+		return <rect width={shape.props.w} height={totalHeight} rx={12} />
 	}
 } 

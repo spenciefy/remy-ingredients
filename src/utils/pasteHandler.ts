@@ -53,8 +53,8 @@ export const handleGlobalPaste = async (e: ClipboardEvent, editor: Editor) => {
                 props: {
                   title: '',
                   imageUrl: dataUrl,
-                  w: Math.round(width),
-                  h: Math.round(height),
+                  w: width,
+                  h: height,
                 },
                 x: point.x,
                 y: point.y,
@@ -77,8 +77,6 @@ export const handleGlobalPaste = async (e: ClipboardEvent, editor: Editor) => {
       props: {
         title: '',
         text: text,
-        w: 400,
-        h: 300,
       },
       x: point.x,
       y: point.y,
