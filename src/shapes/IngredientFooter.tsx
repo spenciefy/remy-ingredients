@@ -52,6 +52,8 @@ export function IngredientFooter({
 						onChange={(e) => onTitleChange(e.currentTarget.value)}
 						onBlur={() => setIsEditingTitle(false)}
 						onKeyDown={(e) => {
+							e.stopPropagation()
+							
 							if (e.key === 'Enter') {
 								setIsEditingTitle(false)
 							}
