@@ -1,10 +1,15 @@
+import FontFamily from '@tiptap/extension-font-family';
+import TextStyle from '@tiptap/extension-text-style';
 import { ClipboardEvent, useCallback, useRef } from 'react';
-import { Editor, Tldraw } from 'tldraw';
+import { Editor, TLTextOptions, Tldraw, defaultAddFontsFromNode, tipTapDefaultExtensions } from 'tldraw';
 import 'tldraw/tldraw.css';
 import { IngredientsPanel } from './components/IngredientsPanel';
+import { extensionFontFamilies } from './extensions/fonts';
+import { FontSize } from './extensions/FontSizeExtension';
 import { ImageIngredientShape } from './shapes/ImageIngredientShape';
 import { TextIngredientShape } from './shapes/TextIngredientShape';
 import './styles.css';
+import './styles/RichTextFontExtension.css';
 import { handleGlobalPaste } from './utils/pasteHandler';
 
 export default function App() {
@@ -21,6 +26,39 @@ export default function App() {
     }
   }, []);
 
+  const textOptions: Partial<TLTextOptions> = {
+    tipTapConfig: {
+      extensions: [...tipTapDefaultExtensions, FontFamily, FontSize, TextStyle],
+    },
+    addFontsFromNode(node, state, addFont) {
+      state = defaultAddFontsFromNode(node, state, addFont)
+
+      // if we have a font-family attribute, keep track of that in the state so it applies to children
+      for (const mark of node.marks) {
+        if (
+          mark.type.name === 'textStyle' &&
+          mark.attrs.fontFamily &&
+          mark.attrs.fontFamily !== 'DEFAULT' &&
+          mark.attrs.fontFamily !== state.family
+        ) {
+          state = { ...state, family: mark.attrs.fontFamily }
+        }
+      }
+
+      // if one of our extension font families matches the current state, add that font to the document.
+      const font = extensionFontFamilies[state.family]?.[state.style]?.[state.weight]
+      if (font) addFont(font)
+
+      return state
+    },
+  }
+
+  const fontFaces = Object.values(extensionFontFamilies)
+    .map((fontFamily) => Object.values(fontFamily))
+    .flat()
+    .map((fontStyle) => Object.values(fontStyle))
+    .flat()
+
   return (
     <div className="flex h-screen w-screen bg-gray-100 p-4">
       {/* Center - TLDraw Canvas */}
@@ -33,8 +71,10 @@ export default function App() {
             autoFocus={true} 
             persistenceKey="my-persistence-key"
             shapeUtils={customShapeUtils}
+            textOptions={textOptions}
             onMount={(editor) => {
               editorRef.current = editor;
+              editor.fonts.requestFonts(fontFaces);
             }}
           >
             <IngredientsPanel />

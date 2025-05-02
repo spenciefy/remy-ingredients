@@ -1,6 +1,32 @@
+import { Editor } from '@tiptap/core'
+import FontFamily from '@tiptap/extension-font-family'
+import TextStyle from '@tiptap/extension-text-style'
+import { EditorContent, useEditor as useTipTapEditor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import { useEffect } from 'react'
 import { BaseBoxShapeUtil, HTMLContainer, RecordProps, T, TLBaseShape } from 'tldraw'
+import { FontSize } from '../extensions/FontSizeExtension'
 import { useShapeIndex } from '../hooks/useShapeIndex'
+import '../styles/tiptap.css'
 import { ShapeHeader } from './ShapeHeader'
+
+const fontOptions = [
+	{ label: 'Default', value: 'DEFAULT' },
+	{ label: 'Inter', value: 'Inter' },
+	{ label: 'Comic Sans MS', value: 'Comic Sans MS' },
+	{ label: 'serif', value: 'serif' },
+	{ label: 'monospace', value: 'monospace' },
+	{ label: 'cursive', value: 'cursive' },
+]
+
+const fontSizeOptions = [
+	{ label: 'Small', value: '12px' },
+	{ label: 'Normal', value: '16px' },
+	{ label: 'Large', value: '20px' },
+	{ label: 'X-Large', value: '24px' },
+	{ label: 'XX-Large', value: '28px' },
+	{ label: 'Huge', value: '32px' },
+]
 
 type ITextIngredientShape = TLBaseShape<
 	'text-ingredient-shape',
@@ -11,6 +37,66 @@ type ITextIngredientShape = TLBaseShape<
 		text: string
 	}
 >
+
+function RichTextToolbar({ editor }: { editor: Editor | null }) {
+	if (!editor) return null
+
+	const currentFontFamily = editor.getAttributes('textStyle').fontFamily ?? 'DEFAULT'
+	const currentFontSize = editor.getAttributes('textStyle').fontSize
+
+	return (
+		<div className="rich-text-toolbar">
+			<select
+				value={currentFontFamily}
+				onChange={(e) => {
+					editor.chain().focus().setFontFamily(e.target.value).run()
+				}}
+			>
+				{fontOptions.map((option) => (
+					<option key={option.value} value={option.value}>
+						{option.label}
+					</option>
+				))}
+			</select>
+			<select
+				value={currentFontSize}
+				onChange={(e) => {
+					editor.chain().focus().setFontSize(e.target.value).run()
+				}}
+			>
+				{fontSizeOptions.map((option) => (
+					<option key={option.value} value={option.value}>
+						{option.label}
+					</option>
+				))}
+			</select>
+			<button 
+				onClick={() => editor.chain().focus().toggleBold().run()}
+				className={editor.isActive('bold') ? 'is-active' : ''}
+			>
+				Bold
+			</button>
+			<button 
+				onClick={() => editor.chain().focus().toggleItalic().run()}
+				className={editor.isActive('italic') ? 'is-active' : ''}
+			>
+				Italic
+			</button>
+			<button 
+				onClick={() => editor.chain().focus().toggleStrike().run()}
+				className={editor.isActive('strike') ? 'is-active' : ''}
+			>
+				Strike
+			</button>
+			<button 
+				onClick={() => editor.chain().focus().toggleCode().run()}
+				className={editor.isActive('code') ? 'is-active' : ''}
+			>
+				Code
+			</button>
+		</div>
+	)
+}
 
 function TextIngredientContent({ 
 	shape,
@@ -25,6 +111,23 @@ function TextIngredientContent({
 }) {
 	const getShapeIndex = useShapeIndex()
 	const index = getShapeIndex(shape.id)
+	
+	const editor = useTipTapEditor({
+		extensions: [
+			StarterKit,
+			FontFamily,
+			FontSize,
+			TextStyle,
+		],
+		content: shape.props.text,
+		onUpdate: ({ editor }) => {
+			onTextChange(editor.getHTML())
+		},
+	})
+
+	useEffect(() => {
+		editor?.commands.setContent(shape.props.text)
+	}, [editor, shape.props.text])
 
 	return (
 		<HTMLContainer
@@ -66,31 +169,21 @@ function TextIngredientContent({
 			<div
 				style={{
 					flex: 1,
-					fontFamily: 'sans-serif',
-					fontSize: '14px',
+					display: 'flex',
+					flexDirection: 'column',
+					padding: '8px',
 				}}
 			>
-				<textarea
-					value={shape.props.text}
-					placeholder="Enter text..."
-					onChange={(e) => onTextChange(e.currentTarget.value)}
-					style={{
-						width: '100%',
-						height: '100%',
-						padding: '16px',
-						border: 'none',
-						outline: 'none',
-						resize: 'none',
-						fontFamily: 'inherit',
-						fontSize: 'inherit',
-						lineHeight: '1.5',
-						background: 'transparent',
-					}}
+				<RichTextToolbar editor={editor} />
+				<div
+					className="tiptap-editor"
 					onPointerDown={(e) => e.stopPropagation()}
 					onPointerUp={(e) => e.stopPropagation()}
 					onTouchStart={(e) => e.stopPropagation()}
 					onTouchEnd={(e) => e.stopPropagation()}
-				/>
+				>
+					<EditorContent editor={editor} />
+				</div>
 			</div>
 		</HTMLContainer>
 	)
