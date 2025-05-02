@@ -23,7 +23,6 @@ export function IngredientFooter({
 
 	const handleDoubleClick = (e: React.MouseEvent) => {
 		e.stopPropagation()
-		e.preventDefault()
 		setIsEditingTitle(true)
 	}
 
@@ -35,13 +34,11 @@ export function IngredientFooter({
 					padding: '4px 4px',
 					display: 'flex',
 					alignItems: 'center',
-					gap: '8px',
 					borderTop: '1px solid rgba(255,255,255,0.1)',
 					borderBottom: '1px solid rgba(255,255,255,0.1)',
 					pointerEvents: 'all',
 				}}
-				onPointerDown={(e) => e.stopPropagation()}
-				onPointerUp={(e) => e.stopPropagation()}
+				// Only stop propagation for specific events that matter for interaction
 				onClick={(e) => e.stopPropagation()}
 			>
 				{isEditingTitle ? (
@@ -70,25 +67,51 @@ export function IngredientFooter({
 							outline: 'none',
 						}}
 						autoFocus
-						onPointerDown={(e) => e.stopPropagation()}
+						onClick={(e) => e.stopPropagation()}
 					/>
 				) : (
-					<div 
-						style={{ 
-							fontSize: '16px', 
-							fontWeight: '500', 
-							padding: '4px 8px',
-							color: title ? 'white' : '#9CA3AF',
-							flex: 1,
-							pointerEvents: 'auto',
-						}}
-						onDoubleClick={(e) => {
-							e.stopPropagation()
-							handleDoubleClick(e)
-						}}
-					>
-						{title || `Ingredient ${index}`}
-					</div>
+					<>
+						<div 
+							style={{ 
+								fontSize: '16px', 
+								fontWeight: '500', 
+								padding: '4px 8px',
+								color: title ? 'white' : '#9CA3AF',
+								flex: 1,
+								pointerEvents: 'auto',
+							}}
+							onDoubleClick={handleDoubleClick}
+						>
+							{title || `Ingredient ${index}`}
+						</div>
+						<button
+							onClick={(e) => {
+								e.stopPropagation()
+								setIsEditingTitle(true)
+							}}
+							style={{
+								background: 'transparent',
+								border: 'none',
+								padding: '4px',
+								cursor: 'pointer',
+								color: '#9CA3AF',
+								display: 'flex',
+							}}
+							onPointerDown={(e) => e.stopPropagation()}
+							title="Edit title"
+						>
+							<svg 
+								width="14" 
+								height="14" 
+								viewBox="0 0 24 24" 
+								fill="none" 
+								stroke="currentColor" 
+								strokeWidth="2"
+							>
+								<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+							</svg>
+						</button>
+					</>
 				)}
 				<button
 					onClick={(e) => {

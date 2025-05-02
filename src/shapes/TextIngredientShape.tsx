@@ -46,6 +46,7 @@ function TextIngredientContent({
 				flexDirection: 'column',
 				color: 'white',
 			}}
+			className="text-ingredient-container"
 		>
 			{/* Main content */}
 			<div
@@ -75,10 +76,12 @@ function TextIngredientContent({
 						background: 'transparent',
 						color: '#374151',
 					}}
-					onPointerDown={(e) => e.stopPropagation()}
-					onPointerUp={(e) => e.stopPropagation()}
-					onTouchStart={(e) => e.stopPropagation()}
-					onTouchEnd={(e) => e.stopPropagation()}
+					onClick={(e) => e.stopPropagation()}
+					onKeyDown={(e) => e.stopPropagation()}
+					onPointerDown={(e) => {
+						// Don't stop propagation, just ensure the editor knows this is interactive
+						e.currentTarget.focus()
+					}}
 				/>
 			</div>
 

@@ -20,18 +20,11 @@ export function CommentSection({ comments, onAddComment }: CommentProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     if (newComment.trim()) {
       onAddComment(newComment.trim())
       setNewComment('')
     }
-  }
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    e.stopPropagation()
-  }
-
-  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    e.stopPropagation()
   }
 
   return (
@@ -39,8 +32,7 @@ export function CommentSection({ comments, onAddComment }: CommentProps) {
       {/* Comments list */}
       <div 
         className="max-h-[200px] overflow-y-auto px-3 py-2 space-y-2 scroll-smooth"
-        onScroll={handleScroll}
-        onWheel={handleWheel}
+        onClick={(e) => e.stopPropagation()}
       >
         {comments.map((comment) => (
           <div
@@ -76,19 +68,14 @@ export function CommentSection({ comments, onAddComment }: CommentProps) {
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Add a comment..."
             className="w-full px-3 py-2 pr-10 bg-[#3A3A3A] text-white rounded-full text-xs focus:outline-none placeholder-gray-400"
-            onPointerDown={(e) => e.stopPropagation()}
-            onPointerUp={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()} 
-            onTouchEnd={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
           />
           <button
             type="submit"
             disabled={!newComment.trim()}
             className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 bg-[#7C9EFF] text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
-            onPointerDown={(e) => e.stopPropagation()}
-            onPointerUp={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
-            onTouchEnd={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             <svg 
               width="14" 
