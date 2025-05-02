@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { CommentProps } from '../types/Comment'
 
-export function CommentSection({ comments, onAddComment }: CommentProps) {
+export function CommentSection({ comments, onAddComment, onDeleteComment }: CommentProps) {
   const [newComment, setNewComment] = useState('')
   const commentsEndRef = useRef<HTMLDivElement>(null)
   const prevCommentsLengthRef = useRef(comments.length)
+  const deleteButtonRef = useRef<HTMLButtonElement>(null)
 
   const scrollToBottom = () => {
     commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -27,12 +28,23 @@ export function CommentSection({ comments, onAddComment }: CommentProps) {
     }
   }
 
+    if (deleteButtonRef.current) {
+    }
+    onDeleteComment(commentId);
+  };
+
   return (
     <div className="bg-[#2C2C2C]">
       {/* Comments list */}
       <div 
-        className="max-h-[200px] overflow-y-auto px-3 py-2 space-y-2 scroll-smooth"
-        onClick={(e) => e.stopPropagation()}
+        className="overflow-y-auto px-3 py-2 space-y-2 scroll-smooth"
+        onClick={(e) => {
+          // Only stop propagation for click events directly on this container
+          // not for those on its children which might need bubbling to work
+          if (e.target === e.currentTarget) {
+            e.stopPropagation();
+          }
+        }}
       >
         {comments.map((comment) => (
           <div
@@ -49,8 +61,34 @@ export function CommentSection({ comments, onAddComment }: CommentProps) {
                 <div className={`rounded-lg px-3 py-2 text-white flex-1 text-left`}>
                   <div className="text-xs">{comment.text}</div>
                 </div>
-                <div className="text-xs text-gray-400 flex-shrink-0">
-                  {new Date(comment.createdAt).toLocaleTimeString()}
+                <div className="flex items-center gap-1">
+                  <div className="text-xs text-gray-400 flex-shrink-0">
+                    {new Date(comment.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                  </div>
+                  <button
+                    ref={deleteButtonRef}
+                    onClick={(e) => {
+                      // Only stop propagation of the click event, not all events
+                      e.stopPropagation();
+                      handleDelete(comment.id);
+                    }}
+                    // Prevent other pointer events from being stopped
+                    onPointerDown={(e) => e.stopPropagation()}
+                    className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>

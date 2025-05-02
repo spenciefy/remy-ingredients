@@ -11,6 +11,7 @@ export interface Comment {
 export interface CommentProps {
   comments: Comment[]
   onAddComment: (text: string, isAI?: boolean) => void
+  onDeleteComment: (commentId: string) => void
 }
 
 export const CommentValidator = T.object({

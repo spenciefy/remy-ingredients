@@ -9,6 +9,7 @@ interface IngredientFooterProps {
 	onTitleChange: (newTitle: string) => void
 	onDelete: () => void
 	onAddComment: (text: string, isAI?: boolean) => void
+	onDeleteComment: (commentId: string) => void
 }
 
 export function IngredientFooter({
@@ -18,6 +19,7 @@ export function IngredientFooter({
 	onTitleChange,
 	onDelete,
 	onAddComment,
+	onDeleteComment,
 }: IngredientFooterProps) {
 	const [isEditingTitle, setIsEditingTitle] = useState(false)
 
@@ -147,6 +149,7 @@ export function IngredientFooter({
 			<CommentSection
 				comments={comments}
 				onAddComment={onAddComment}
+				onDeleteComment={onDeleteComment}
 			/>
 		</>
 	)

@@ -20,12 +20,14 @@ function ImageIngredientContent({
 	onDelete,
 	onImageUrlChange,
 	onAddComment,
+	onDeleteComment,
 }: {
 	shape: IImageIngredientShape
 	onTitleChange: (newTitle: string) => void
 	onDelete: () => void
 	onImageUrlChange: (newImageUrl: string) => void
 	onAddComment: (text: string, isAI?: boolean) => void
+	onDeleteComment: (commentId: string) => void
 }) {
 	const getShapeIndex = useShapeIndex()
 	const index = getShapeIndex(shape.id)
@@ -149,6 +151,7 @@ function ImageIngredientContent({
 				onTitleChange={onTitleChange}
 				onDelete={onDelete}
 				onAddComment={onAddComment}
+				onDeleteComment={onDeleteComment}
 			/>
 		</HTMLContainer>
 	)
@@ -237,6 +240,17 @@ export class ImageIngredientShape extends BaseBoxShapeUtil<IImageIngredientShape
 							comments: newComments
                         },
 					})
+				}}
+				onDeleteComment={(commentId: string) => {
+					const newComments = shape.props.comments.filter(comment => comment.id !== commentId);
+					this.editor.updateShape<IImageIngredientShape>({
+						id: shape.id,
+						type: 'image-ingredient-shape',
+						props: {
+							...shape.props,
+							comments: newComments
+						},
+					});
 				}}
 			/>
 		)

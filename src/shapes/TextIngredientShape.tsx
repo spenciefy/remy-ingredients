@@ -20,12 +20,14 @@ function TextIngredientContent({
 	onDelete,
 	onTextChange,
 	onAddComment,
+	onDeleteComment,
 }: { 
 	shape: ITextIngredientShape
 	onTitleChange: (newTitle: string) => void
 	onDelete: () => void
 	onTextChange: (newText: string) => void
 	onAddComment: (text: string, isAI?: boolean) => void
+	onDeleteComment: (commentId: string) => void
 }) {
 	const getShapeIndex = useShapeIndex()
 	const index = getShapeIndex(shape.id)
@@ -92,6 +94,7 @@ function TextIngredientContent({
 				onTitleChange={onTitleChange}
 				onDelete={onDelete}
 				onAddComment={onAddComment}
+				onDeleteComment={onDeleteComment}
 			/>
 		</HTMLContainer>
 	)
@@ -154,6 +157,17 @@ export class TextIngredientShape extends BaseBoxShapeUtil<ITextIngredientShape> 
 							comments: newComments
 						},
 					})
+				}}
+				onDeleteComment={(commentId: string) => {
+					const newComments = shape.props.comments.filter(comment => comment.id !== commentId);
+					this.editor.updateShape<ITextIngredientShape>({
+						id: shape.id,
+						type: 'text-ingredient-shape',
+						props: {
+							...shape.props,
+							comments: newComments
+						},
+					});
 				}}
 			/>
 		)
