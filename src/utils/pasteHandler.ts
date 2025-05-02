@@ -1,6 +1,15 @@
 import { Editor } from 'tldraw'
 
 export const handleGlobalPaste = async (e: ClipboardEvent, editor: Editor) => {
+  // Check if there are any selected shapes in tldraw
+  const selectedShapeIds = editor.getSelectedShapeIds()
+  const hasSelectedShapes = selectedShapeIds.length > 0
+
+  // If shapes are selected, let tldraw handle the paste
+  if (hasSelectedShapes) {
+    return
+  }
+
   // Stop propagation to prevent tldraw's default paste
   e.stopPropagation()
   e.preventDefault()
@@ -18,17 +27,40 @@ export const handleGlobalPaste = async (e: ClipboardEvent, editor: Editor) => {
           const reader = new FileReader()
           reader.onload = () => {
             const dataUrl = reader.result as string
-            editor.createShape({
-              type: 'image-ingredient-shape',
-              props: {
-                title: 'Image Ingredient',
-                imageUrl: dataUrl,
-                w: 400,
-                h: 300,
-              },
-              x: point.x,
-              y: point.y,
-            })
+            // Create temporary image to get dimensions
+            const img = new Image()
+            img.onload = () => {
+              // Calculate dimensions while maintaining aspect ratio
+              const maxWidth = 600
+              const maxHeight = 600
+              let width = img.naturalWidth
+              let height = img.naturalHeight
+              
+              // Scale down if image is larger than max dimensions
+              if (width > maxWidth || height > maxHeight) {
+                const aspectRatio = width / height
+                if (width / maxWidth > height / maxHeight) {
+                  width = maxWidth
+                  height = width / aspectRatio
+                } else {
+                  height = maxHeight
+                  width = height * aspectRatio
+                }
+              }
+
+              editor.createShape({
+                type: 'image-ingredient-shape',
+                props: {
+                  title: '',
+                  imageUrl: dataUrl,
+                  w: Math.round(width),
+                  h: Math.round(height),
+                },
+                x: point.x,
+                y: point.y,
+              })
+            }
+            img.src = dataUrl
           }
           reader.readAsDataURL(file)
           return
@@ -43,7 +75,7 @@ export const handleGlobalPaste = async (e: ClipboardEvent, editor: Editor) => {
     editor.createShape({
       type: 'text-ingredient-shape',
       props: {
-        title: 'Text Ingredient',
+        title: '',
         text: text,
         w: 400,
         h: 300,

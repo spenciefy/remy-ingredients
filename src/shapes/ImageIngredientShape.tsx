@@ -1,4 +1,5 @@
 import { BaseBoxShapeUtil, HTMLContainer, RecordProps, T, TLBaseShape } from 'tldraw'
+import { ShapeHeader } from './ShapeHeader'
 
 type IImageIngredientShape = TLBaseShape<
 	'image-ingredient-shape',
@@ -23,7 +24,7 @@ export class ImageIngredientShape extends BaseBoxShapeUtil<IImageIngredientShape
 		return {
 			w: 400,
 			h: 300,
-			title: 'Add title',
+			title: '',
 			imageUrl: '',
 		}
 	}
@@ -41,11 +42,37 @@ export class ImageIngredientShape extends BaseBoxShapeUtil<IImageIngredientShape
 						const reader = new FileReader()
 						reader.onload = () => {
 							const dataUrl = reader.result as string
-							this.editor.updateShape<IImageIngredientShape>({
-								id: shape.id,
-								type: 'image-ingredient-shape',
-								props: { ...shape.props, imageUrl: dataUrl },
-							})
+							// Create temporary image to get dimensions
+							const img = new Image()
+							img.onload = () => {
+								// Calculate dimensions while maintaining aspect ratio
+								const maxWidth = shape.props.w
+								const maxHeight = shape.props.h
+								let width = img.naturalWidth
+								let height = img.naturalHeight
+								
+								// Scale to fit current shape size while maintaining aspect ratio
+								const aspectRatio = width / height
+								if (width / maxWidth > height / maxHeight) {
+									width = maxWidth
+									height = width / aspectRatio
+								} else {
+									height = maxHeight
+									width = height * aspectRatio
+								}
+
+								this.editor.updateShape<IImageIngredientShape>({
+									id: shape.id,
+									type: 'image-ingredient-shape',
+									props: { 
+										...shape.props, 
+										imageUrl: dataUrl,
+										w: Math.round(width),
+										h: Math.round(height)
+									},
+								})
+							}
+							img.src = dataUrl
 						}
 						reader.readAsDataURL(file)
 						break
@@ -68,51 +95,27 @@ export class ImageIngredientShape extends BaseBoxShapeUtil<IImageIngredientShape
 					flexDirection: 'column',
 				}}
 			>
-				<div
-					style={{
-						padding: '16px',
-						background: 'black',
-						color: 'white',
-						fontFamily: 'sans-serif',
-						fontSize: '16px',
-						fontWeight: 'bold',
+				<ShapeHeader
+					title={shape.props.title}
+					onTitleChange={(newTitle) => {
+						this.editor.updateShape<IImageIngredientShape>({
+							id: shape.id,
+							type: 'image-ingredient-shape',
+							props: { ...shape.props, title: newTitle },
+						})
 					}}
-				>
-					<input
-						type="text"
-						value={shape.props.title}
-						onChange={(e) =>
-							this.editor.updateShape<IImageIngredientShape>({
-								id: shape.id,
-								type: 'image-ingredient-shape',
-								props: { ...shape.props, title: e.currentTarget.value },
-							})
-						}
-						style={{
-							width: '100%',
-							background: 'transparent',
-							color: 'inherit',
-							fontFamily: 'inherit',
-							fontSize: 'inherit',
-							fontWeight: 'inherit',
-							border: 'none',
-							padding: 0,
-							margin: 0,
-							outline: 'none',
-						}}
-						onPointerDown={(e) => e.stopPropagation()}
-						onPointerUp={(e) => e.stopPropagation()}
-						onTouchStart={(e) => e.stopPropagation()}
-						onTouchEnd={(e) => e.stopPropagation()}
-					/>
-				</div>
+					onDelete={() => {
+						this.editor.deleteShape(shape.id)
+					}}
+				/>
 				<div
 					style={{
 						flex: 1,
 						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'center',
 						position: 'relative',
+						minHeight: 0,
+						margin: 0,
+						padding: 0,
 					}}
 					onPaste={handlePaste}
 					tabIndex={0}
@@ -122,9 +125,10 @@ export class ImageIngredientShape extends BaseBoxShapeUtil<IImageIngredientShape
 							src={shape.props.imageUrl}
 							alt={shape.props.title}
 							style={{
-								maxWidth: '100%',
-								maxHeight: '100%',
+								width: '100%',
+								height: '100%',
 								objectFit: 'contain',
+								display: 'block',
 							}}
 						/>
 					) : (
@@ -136,7 +140,7 @@ export class ImageIngredientShape extends BaseBoxShapeUtil<IImageIngredientShape
 								flexDirection: 'column',
 								alignItems: 'center',
 								justifyContent: 'center',
-								color: '#666',
+								color: '#6b7280',
 								fontFamily: 'sans-serif',
 								padding: '16px',
 							}}
