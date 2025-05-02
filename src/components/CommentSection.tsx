@@ -54,10 +54,8 @@ export function CommentSection({ comments, onAddComment }: CommentProps) {
             
             <div className="flex-1">
               <div className="flex items-center gap-2 justify-between">
-                <div className={`rounded-lg px-3 py-2 text-white flex-1 ${
-                  comment.isAI ? 'text-right' : 'text-left'
-                }`}>
-                  <div className="text-sm">{comment.text}</div>
+                <div className={`rounded-lg px-3 py-2 text-white flex-1 text-left`}>
+                  <div className="text-xs">{comment.text}</div>
                 </div>
                 <div className="text-xs text-gray-400 flex-shrink-0">
                   {new Date(comment.createdAt).toLocaleTimeString()}

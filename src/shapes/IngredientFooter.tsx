@@ -62,7 +62,7 @@ export function IngredientFooter({
 							padding: '4px 8px',
 							borderRadius: '4px',
 							color: 'white',
-							fontSize: '14px',
+							fontSize: '16px',
 							fontWeight: '500',
 							width: '100%',
 							outline: 'none',
@@ -73,7 +73,7 @@ export function IngredientFooter({
 				) : (
 					<div 
 						style={{ 
-							fontSize: '14px', 
+							fontSize: '16px', 
 							fontWeight: '500', 
 							padding: '4px 8px',
 							color: title ? 'white' : '#9CA3AF',
@@ -96,7 +96,7 @@ export function IngredientFooter({
 					style={{
 						background: 'transparent',
 						border: 'none',
-						padding: '4px',
+						padding: '8px',
 						cursor: 'pointer',
 						color: '#9CA3AF',
 						display: 'flex',
@@ -105,8 +105,8 @@ export function IngredientFooter({
 					title="Delete shape"
 				>
 					<svg 
-						width="14" 
-						height="14" 
+						width="20" 
+						height="20" 
 						viewBox="0 0 24 24" 
 						fill="none" 
 						stroke="currentColor" 
