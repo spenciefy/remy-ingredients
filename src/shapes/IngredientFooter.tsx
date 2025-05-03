@@ -5,10 +5,13 @@ import { RiFlashlightFill } from 'react-icons/ri'
 import { Comment } from '../types/Comment'
 import { CommentSection } from './CommentSection'
 
-interface IngredientFooterProps {
+interface IngredientShapeProps {
 	title: string
 	comments: Comment[]
-	type: 'text-ingredient-shape' | 'image-ingredient-shape'
+}
+
+type IngredientFooterProps = {
+	shapeProps: IngredientShapeProps
 	onTitleChange: (newTitle: string) => void
 	onDelete: () => void
 	onAddComment: (text: string, isAI?: boolean) => void
@@ -17,20 +20,8 @@ interface IngredientFooterProps {
 	isSummarizing?: boolean
 }
 
-// Helper function to get the display title
-const getDisplayTitle = (title: string, type: string): string => {
-	if (title?.trim()) {
-		return title;
-	}
-	
-	// Fallback based on ingredient type
-	return type === 'image-ingredient-shape' ? 'Image' : 'Text';
-};
-
 export function IngredientFooter({
-	title,
-	comments,
-	type,
+	shapeProps,
 	onTitleChange,
 	onDelete,
 	onAddComment,
@@ -38,14 +29,14 @@ export function IngredientFooter({
 	onGenerateSummary,
 	isSummarizing = false,
 }: IngredientFooterProps) {
+	const { title, comments } = shapeProps
+
 	const [isEditingTitle, setIsEditingTitle] = useState(false)
 
 	const handleDoubleClick = (e: React.MouseEvent) => {
 		e.stopPropagation()
 		setIsEditingTitle(true)
 	}
-
-	const displayTitle = getDisplayTitle(title, type);
 
 	return (
 		<>
@@ -103,7 +94,7 @@ export function IngredientFooter({
 							}}
 							onDoubleClick={handleDoubleClick}
 						>
-							{displayTitle}
+							{title}
 						</div>
 						<button
 							onClick={(e) => {

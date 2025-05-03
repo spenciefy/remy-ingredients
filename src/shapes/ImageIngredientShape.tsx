@@ -23,6 +23,7 @@ function ImageIngredientContent({
 	onImageUrlChange,
 	onAddComment,
 	onDeleteComment,
+	onUpdateShapeProps,
 }: {
 	shape: IImageIngredientShape
 	onTitleChange: (newTitle: string) => void
@@ -30,6 +31,7 @@ function ImageIngredientContent({
 	onImageUrlChange: (newImageUrl: string) => void
 	onAddComment: (text: string, isAI?: boolean) => void
 	onDeleteComment: (commentId: string) => void
+	onUpdateShapeProps: (props: Partial<IImageIngredientShape['props']>) => void
 }) {
 	const [isSummarizing, setIsSummarizing] = useState(false)
 
@@ -66,11 +68,35 @@ function ImageIngredientContent({
 		setIsSummarizing(true)
 		try {
 			const summary = await generateIngredientSummary(shape.props.imageUrl, shape.props.title, true)
-			onTitleChange(summary.title)
-			onAddComment(summary.description, true)
+			
+			// Create new comment
+			const newComment: Comment = {
+				id: Math.random().toString(36).substr(2, 9),
+				text: summary.description,
+				createdAt: Date.now(),
+				isAI: true,
+			}
+			
+			// Update title and comments in a single call
+			onUpdateShapeProps({
+				title: summary.title,
+				comments: [...shape.props.comments, newComment]
+			})
 		} catch (error) {
 			console.error('Error generating summary:', error)
-			onAddComment('Failed to generate summary. Please try again.', true)
+			
+			// Create error comment
+			const errorComment: Comment = {
+				id: Math.random().toString(36).substr(2, 9),
+				text: 'Failed to generate summary. Please try again.',
+				createdAt: Date.now(),
+				isAI: true,
+			}
+			
+			// Add error comment
+			onUpdateShapeProps({
+				comments: [...shape.props.comments, errorComment]
+			})
 		} finally {
 			setIsSummarizing(false)
 		}
@@ -165,9 +191,7 @@ function ImageIngredientContent({
 			</div>
 
 			<IngredientFooter
-				title={shape.props.title}
-				comments={shape.props.comments}
-				type="image-ingredient-shape"
+				shapeProps={shape.props}
 				onTitleChange={onTitleChange}
 				onDelete={onDelete}
 				onAddComment={onAddComment}
@@ -273,6 +297,16 @@ export class ImageIngredientShape extends BaseBoxShapeUtil<IImageIngredientShape
 							comments: newComments
 						},
 					});
+				}}
+				onUpdateShapeProps={(props) => {
+					this.editor.updateShape<IImageIngredientShape>({
+						id: shape.id,
+						type: 'image-ingredient-shape',
+						props: {
+							...shape.props,
+							...props
+						},
+					})
 				}}
 			/>
 		)

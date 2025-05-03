@@ -23,6 +23,7 @@ function TextIngredientContent({
 	onTextChange,
 	onAddComment,
 	onDeleteComment,
+	onUpdateShapeProps,
 }: { 
 	shape: ITextIngredientShape
 	onTitleChange: (newTitle: string) => void
@@ -30,6 +31,7 @@ function TextIngredientContent({
 	onTextChange: (newText: string) => void
 	onAddComment: (text: string, isAI?: boolean) => void
 	onDeleteComment: (commentId: string) => void
+	onUpdateShapeProps: (props: Partial<ITextIngredientShape['props']>) => void
 }) {
 	const [isSummarizing, setIsSummarizing] = useState(false)
 
@@ -45,11 +47,36 @@ function TextIngredientContent({
 		setIsSummarizing(true)
 		try {
 			const summary = await generateIngredientSummary(shape.props.text, shape.props.title, false)
-			onTitleChange(summary.title)
-			onAddComment(summary.description, true)
+			console.log("Summary received:", summary);
+			
+			// Create new comment
+			const newComment: Comment = {
+				id: Math.random().toString(36).substr(2, 9),
+				text: summary.description,
+				createdAt: Date.now(),
+				isAI: true,
+			}
+			
+			// Update title and comments in a single call
+			onUpdateShapeProps({
+				title: summary.title,
+				comments: [...shape.props.comments, newComment]
+			})
 		} catch (error) {
 			console.error('Error generating summary:', error)
-			onAddComment('Failed to generate summary. Please try again.', true)
+			
+			// Create error comment
+			const errorComment: Comment = {
+				id: Math.random().toString(36).substr(2, 9),
+				text: 'Failed to generate summary. Please try again.',
+				createdAt: Date.now(),
+				isAI: true,
+			}
+			
+			// Add error comment
+			onUpdateShapeProps({
+				comments: [...shape.props.comments, errorComment]
+			})
 		} finally {
 			setIsSummarizing(false)
 		}
@@ -108,9 +135,7 @@ function TextIngredientContent({
 			</div>
 
 			<IngredientFooter
-				title={shape.props.title}
-				comments={shape.props.comments}
-				type="text-ingredient-shape"
+				shapeProps={shape.props}
 				onTitleChange={onTitleChange}
 				onDelete={onDelete}
 				onAddComment={onAddComment}
@@ -147,11 +172,16 @@ export class TextIngredientShape extends BaseBoxShapeUtil<ITextIngredientShape> 
 			<TextIngredientContent
 				shape={shape}
 				onTitleChange={(newTitle) => {
+					console.log("TextIngredientShape: Title changing for shape id", shape.id, "to:", newTitle);
 					this.editor.updateShape<ITextIngredientShape>({
 						id: shape.id,
 						type: 'text-ingredient-shape',
-						props: { ...shape.props, title: newTitle },
+						props: { 
+							...shape.props,
+							title: newTitle
+						},
 					})
+					console.log("TextIngredientShape: Title update complete for shape id", shape.id, "new title:", newTitle);
 				}}
 				onDelete={() => {
 					this.editor.deleteShape(shape.id)
@@ -190,6 +220,16 @@ export class TextIngredientShape extends BaseBoxShapeUtil<ITextIngredientShape> 
 							comments: newComments
 						},
 					});
+				}}
+				onUpdateShapeProps={(props) => {
+					this.editor.updateShape<ITextIngredientShape>({
+						id: shape.id,
+						type: 'text-ingredient-shape',
+						props: {
+							...shape.props,
+							...props
+						},
+					})
 				}}
 			/>
 		)
