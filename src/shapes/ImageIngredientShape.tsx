@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { BaseBoxShapeUtil, HTMLContainer, RecordProps, T, TLBaseShape } from 'tldraw'
+import { BASE_FOOTER_HEIGHT, COMMENT_HEIGHT } from '../constants/shapes'
 import { useShapeIndex } from '../hooks/useShapeIndex'
 import { Comment, CommentValidator } from '../types/Comment'
 import { generateIngredientSummary } from '../utils/llmService'
@@ -57,7 +58,10 @@ function ImageIngredientContent({
 	}
 
 	// Calculate total height based on number of comments
-	const totalHeight = shape.props.h + (shape.props.comments.length * 50)
+	const totalHeight =
+		shape.props.h +
+		BASE_FOOTER_HEIGHT +
+		shape.props.comments.length * COMMENT_HEIGHT
 
 	const handleGenerateSummary = async () => {
 		if (isSummarizing) return
@@ -278,7 +282,10 @@ export class ImageIngredientShape extends BaseBoxShapeUtil<IImageIngredientShape
 	}
 
 	indicator(shape: IImageIngredientShape) {
-		const totalHeight = shape.props.h + (shape.props.comments.length * 50)
+		const totalHeight =
+			shape.props.h +
+			BASE_FOOTER_HEIGHT +
+			shape.props.comments.length * COMMENT_HEIGHT
 		return <rect width={shape.props.w} height={totalHeight} rx={12} />
 	}
 } 

@@ -1,6 +1,9 @@
 import { useState } from 'react'
-import { CommentSection } from '../components/CommentSection'
+import { AiOutlineLoading3Quarters } from 'react-icons/ai'
+import { FiEdit2, FiX } from 'react-icons/fi'
+import { RiFlashlightFill } from 'react-icons/ri'
 import { Comment } from '../types/Comment'
+import { CommentSection } from './CommentSection'
 
 interface IngredientFooterProps {
 	title: string
@@ -100,38 +103,22 @@ export function IngredientFooter({
 								border: 'none',
 								padding: '4px',
 								cursor: 'pointer',
-								color: '#7C9EFF',
+								color: '#9CA3AF',
 								display: 'flex',
 								alignItems: 'center',
+								marginLeft: '4px',
 							}}
 							onPointerDown={(e) => e.stopPropagation()}
-							title="Generate summary"
+							title="Remy Summary"
 							disabled={isSummarizing}
 						>
 							{isSummarizing ? (
-								<svg 
-									width="16" 
-									height="16" 
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									strokeWidth="2"
+								<AiOutlineLoading3Quarters 
+									size={16} 
 									className="animate-spin"
-								>
-									<circle cx="12" cy="12" r="10" strokeWidth="4" stroke="currentColor" strokeDasharray="32" strokeDashoffset="12" fill="none" />
-								</svg>
+								/>
 							) : (
-								<svg 
-									width="16" 
-									height="16" 
-									viewBox="0 0 24 24" 
-									fill="none" 
-									stroke="currentColor" 
-									strokeWidth="2"
-								>
-									<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-									<path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-								</svg>
+								<RiFlashlightFill size={16} />
 							)}
 						</button>
 						<button
@@ -146,20 +133,13 @@ export function IngredientFooter({
 								cursor: 'pointer',
 								color: '#9CA3AF',
 								display: 'flex',
+								alignItems: 'center',
+								marginLeft: '4px',
 							}}
 							onPointerDown={(e) => e.stopPropagation()}
 							title="Edit title"
 						>
-							<svg 
-								width="14" 
-								height="14" 
-								viewBox="0 0 24 24" 
-								fill="none" 
-								stroke="currentColor" 
-								strokeWidth="2"
-							>
-								<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
-							</svg>
+							<FiEdit2 size={14} />
 						</button>
 					</>
 				)}
@@ -171,25 +151,17 @@ export function IngredientFooter({
 					style={{
 						background: 'transparent',
 						border: 'none',
-						padding: '8px',
+						padding: '4px',
 						cursor: 'pointer',
 						color: '#9CA3AF',
 						display: 'flex',
+						alignItems: 'center',
+						marginLeft: '4px',
 					}}
 					onPointerDown={(e) => e.stopPropagation()}
-					title="Delete shape"
+					title="Delete ingredient"
 				>
-					<svg 
-						width="20" 
-						height="20" 
-						viewBox="0 0 24 24" 
-						fill="none" 
-						stroke="currentColor" 
-						strokeWidth="2"
-					>
-						<line x1="18" y1="6" x2="6" y2="18"/>
-						<line x1="6" y1="6" x2="18" y2="18"/>
-					</svg>
+					<FiX size={20} />
 				</button>
 			</div>
 
