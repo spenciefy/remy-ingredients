@@ -8,7 +8,7 @@ import { CommentSection } from './CommentSection'
 interface IngredientFooterProps {
 	title: string
 	comments: Comment[]
-	index: number
+	type: 'text-ingredient-shape' | 'image-ingredient-shape'
 	onTitleChange: (newTitle: string) => void
 	onDelete: () => void
 	onAddComment: (text: string, isAI?: boolean) => void
@@ -17,10 +17,20 @@ interface IngredientFooterProps {
 	isSummarizing?: boolean
 }
 
+// Helper function to get the display title
+const getDisplayTitle = (title: string, type: string): string => {
+	if (title?.trim()) {
+		return title;
+	}
+	
+	// Fallback based on ingredient type
+	return type === 'image-ingredient-shape' ? 'Image' : 'Text';
+};
+
 export function IngredientFooter({
 	title,
 	comments,
-	index,
+	type,
 	onTitleChange,
 	onDelete,
 	onAddComment,
@@ -34,6 +44,8 @@ export function IngredientFooter({
 		e.stopPropagation()
 		setIsEditingTitle(true)
 	}
+
+	const displayTitle = getDisplayTitle(title, type);
 
 	return (
 		<>
@@ -91,7 +103,7 @@ export function IngredientFooter({
 							}}
 							onDoubleClick={handleDoubleClick}
 						>
-							{title || `Ingredient ${index}`}
+							{displayTitle}
 						</div>
 						<button
 							onClick={(e) => {

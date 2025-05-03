@@ -1,7 +1,9 @@
 import { MouseEvent, useCallback, useEffect, useState } from 'react'
 import { TLBaseShape, TLShapeId, useEditor } from 'tldraw'
+import { IngredientPanelRow } from './IngredientPanelRow'
 
-type IngredientShape = TLBaseShape<
+// Export the type so it can be used in the row component
+export type IngredientShape = TLBaseShape<
   'text-ingredient-shape' | 'image-ingredient-shape',
   {
     w: number
@@ -12,11 +14,20 @@ type IngredientShape = TLBaseShape<
   }
 >
 
+// Add helper function for fallback title
+export const getIngredientTitle = (ingredient: IngredientShape): string => {
+  if (ingredient.props.title?.trim()) {
+    return ingredient.props.title;
+  }
+  
+  // Fallback based on ingredient type
+  return ingredient.type === 'image-ingredient-shape' ? 'Image' : 'Text';
+};
+
 export function IngredientsPanel() {
   const editor = useEditor()
   const [ingredients, setIngredients] = useState<IngredientShape[]>([])
   const [selectedIds, setSelectedIds] = useState<TLShapeId[]>([])
-  const [editingTitleId, setEditingTitleId] = useState<TLShapeId | null>(null)
   const [isExpanded, setIsExpanded] = useState(true)
   const [width, setWidth] = useState(320)
   const [isResizing, setIsResizing] = useState(false)
@@ -168,18 +179,42 @@ export function IngredientsPanel() {
     }
   }, [editor, selectedIds])
 
-  const handleTitleDoubleClick = useCallback((id: TLShapeId) => {
-    setEditingTitleId(id)
-  }, [])
+  // Handle ingredient selection
+  const handleIngredientSelect = useCallback((e: React.MouseEvent, ingredientId: TLShapeId) => {
+    // If shift key is pressed, add to selection instead of replacing
+    if (e.shiftKey) {
+      const currentSelection = [...editor.getSelectedShapeIds()];
+      
+      // If already selected, remove from selection
+      if (currentSelection.includes(ingredientId)) {
+        editor.setSelectedShapes(currentSelection.filter(id => id !== ingredientId));
+      } else {
+        // Add to selection
+        editor.setSelectedShapes([...currentSelection, ingredientId]);
+      }
+    } else {
+      // Normal selection (replace)
+      editor.setSelectedShapes([ingredientId]);
+      
+      // Find the shape's bounds to center on it
+      const shape = editor.getShape(ingredientId);
+      if (shape) {
+        // Get shape's page bounds
+        const bounds = editor.getShapePageBounds(ingredientId);
+        if (bounds) {
+          // Center the camera on the shape
+          editor.centerOnPoint(bounds.center);
+          // Apply a reasonable zoom level
+          editor.zoomToBounds(bounds, { targetZoom: 0.85 });
+        }
+      }
+    }
+  }, [editor]);
 
-  const handleTitleChange = useCallback((id: TLShapeId, newTitle: string) => {
-    editor.updateShape({
-      id,
-      type: 'text-ingredient-shape',
-      props: { title: newTitle }
-    })
-    setEditingTitleId(null)
-  }, [editor])
+  // Handle title editing
+  const handleTitleDoubleClick = useCallback((id: TLShapeId) => {
+    editor.setEditingShape(id)
+  }, [editor]);
 
   const toggleExpanded = useCallback(() => {
     setIsExpanded(prev => !prev)
@@ -198,7 +233,7 @@ export function IngredientsPanel() {
           isExpanded ? 'p-4 border-b border-gray-200 justify-between' : 'px-4 py-3 justify-between'
         }`}>
           <div className="flex-1">
-            <h2 className="text-lg font-semibold">Ingredients</h2>
+            <h2 className="text-lg font-semibold">Ingredients ({ingredients.length})</h2>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -255,99 +290,15 @@ export function IngredientsPanel() {
         {/* Content */}
         {isExpanded && (
           <div className="p-2 overflow-y-auto max-h-[calc(100%-80px)]">
-            {ingredients.map((ingredient, index) => (
-              <div 
-                key={ingredient.id} 
-                className={`mb-2 rounded-lg cursor-pointer overflow-hidden transition-colors shadow-sm hover:shadow ${
-                  selectedIds.includes(ingredient.id) ? 'bg-blue-50 ring-2 ring-blue-500' : 'bg-gray-50 hover:bg-gray-100'
-                }`}
-                onClick={() => {
-                  editor.setSelectedShapes([ingredient.id])
-                  editor.zoomToFit()
-                }}
-              >
-                <div className="p-2">
-                  <div className="flex items-center gap-2">
-                    {/* Icon based on type */}
-                    {ingredient.type === 'text-ingredient-shape' ? (
-                      <svg 
-                        width="16" 
-                        height="16" 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="2"
-                        className="text-gray-600"
-                      >
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <path d="M14 2v6h6"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
-                        <line x1="10" y1="9" x2="8" y2="9"/>
-                      </svg>
-                    ) :
-                      <svg 
-                        width="16" 
-                        height="16" 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="2"
-                        className="text-gray-600"
-                      >
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                        <circle cx="8.5" cy="8.5" r="1.5"/>
-                        <path d="m21 15-5-5L5 21"/>
-                      </svg>
-                    }
-                    {editingTitleId === ingredient.id ? (
-                      <input
-                        type="text"
-                        className="flex-1 text-sm px-1 border rounded"
-                        defaultValue={ingredient.props.title}
-                        autoFocus
-                        onBlur={(e) => handleTitleChange(ingredient.id, e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleTitleChange(ingredient.id, e.currentTarget.value)
-                          }
-                          if (e.key === 'Escape') {
-                            setEditingTitleId(null)
-                          }
-                          e.stopPropagation()
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    ) : (
-                      <span 
-                        className="flex-1 font-medium text-sm text-gray-900"
-                        onDoubleClick={(e) => {
-                          e.stopPropagation()
-                          handleTitleDoubleClick(ingredient.id)
-                        }}
-                      >
-                        {ingredient.props.title || `Ingredient ${index}`}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Content preview */}
-                  {ingredient.type === 'text-ingredient-shape' && ingredient.props.text && (
-                    <div className="mt-1 text-xs text-gray-500 line-clamp-2">
-                      {ingredient.props.text}
-                    </div>
-                  )}
-                  {ingredient.type === 'image-ingredient-shape' && ingredient.props.imageUrl && (
-                    <div className="mt-1 h-20 bg-gray-200 rounded overflow-hidden">
-                      <img 
-                        src={ingredient.props.imageUrl} 
-                        alt={ingredient.props.title || `Ingredient ${index}`} 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
+            {ingredients.map((ingredient) => (
+              <IngredientPanelRow
+                key={ingredient.id}
+                ingredient={ingredient}
+                isSelected={selectedIds.includes(ingredient.id)}
+                onSelect={(e) => handleIngredientSelect(e, ingredient.id)}
+                onDoubleClick={() => handleTitleDoubleClick(ingredient.id)}
+                editor={editor}
+              />
             ))}
           </div>
         )}

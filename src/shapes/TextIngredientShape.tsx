@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { BaseBoxShapeUtil, HTMLContainer, RecordProps, T, TLBaseShape } from 'tldraw'
 import { BASE_FOOTER_HEIGHT, COMMENT_HEIGHT } from '../constants/shapes'
-import { useShapeIndex } from '../hooks/useShapeIndex'
 import { Comment, CommentValidator } from '../types/Comment'
 import { generateIngredientSummary } from '../utils/llmService'
 import { IngredientFooter } from './IngredientFooter'
@@ -32,8 +31,6 @@ function TextIngredientContent({
 	onAddComment: (text: string, isAI?: boolean) => void
 	onDeleteComment: (commentId: string) => void
 }) {
-	const getShapeIndex = useShapeIndex()
-	const index = getShapeIndex(shape.id)
 	const [isSummarizing, setIsSummarizing] = useState(false)
 
 	// Calculate total height based on number of comments
@@ -113,7 +110,7 @@ function TextIngredientContent({
 			<IngredientFooter
 				title={shape.props.title}
 				comments={shape.props.comments}
-				index={index}
+				type="text-ingredient-shape"
 				onTitleChange={onTitleChange}
 				onDelete={onDelete}
 				onAddComment={onAddComment}
