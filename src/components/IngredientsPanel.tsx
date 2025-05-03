@@ -1,5 +1,6 @@
-import { MouseEvent, useCallback, useEffect, useState } from 'react'
-import { TLBaseShape, TLShapeId, useEditor } from 'tldraw'
+import { useCallback, useContext, useEffect, useState } from 'react'
+import { TLBaseShape, TLShapeId } from 'tldraw'
+import { editorContext } from '../App'
 import { IngredientPanelRow } from './IngredientPanelRow'
 
 // Export the type so it can be used in the row component
@@ -25,12 +26,9 @@ export const getIngredientTitle = (ingredient: IngredientShape): string => {
 };
 
 export function IngredientsPanel() {
-  const editor = useEditor()
+	const { editor } = useContext(editorContext)
   const [ingredients, setIngredients] = useState<IngredientShape[]>([])
   const [selectedIds, setSelectedIds] = useState<TLShapeId[]>([])
-  const [isExpanded, setIsExpanded] = useState(true)
-  const [width, setWidth] = useState(320)
-  const [isResizing, setIsResizing] = useState(false)
   const [copySuccess, setCopySuccess] = useState(false)
 
   // Convert image URL to base64
@@ -85,36 +83,6 @@ export function IngredientsPanel() {
       console.error('Failed to copy:', err)
     }
   }, [formatIngredientsForLLM])
-
-  // Handle resize
-  const handleResizeStart = useCallback((e: MouseEvent) => {
-    e.preventDefault()
-    setIsResizing(true)
-  }, [])
-
-  const handleResize = useCallback((e: globalThis.MouseEvent) => {
-    if (!isResizing) return
-    
-    const newWidth = e.clientX - 16 // 16px is the left offset
-    // Clamp width between min and max values
-    setWidth(Math.max(250, Math.min(800, newWidth)))
-  }, [isResizing])
-
-  const handleResizeEnd = useCallback(() => {
-    setIsResizing(false)
-  }, [])
-
-  // Add and remove resize event listeners
-  useEffect(() => {
-    if (isResizing) {
-      window.addEventListener('mousemove', handleResize)
-      window.addEventListener('mouseup', handleResizeEnd)
-    }
-    return () => {
-      window.removeEventListener('mousemove', handleResize)
-      window.removeEventListener('mouseup', handleResizeEnd)
-    }
-  }, [isResizing, handleResize, handleResizeEnd])
 
   // Update ingredients list when shapes change
   useEffect(() => {
@@ -216,26 +184,15 @@ export function IngredientsPanel() {
     editor.setEditingShape(id)
   }, [editor]);
 
-  const toggleExpanded = useCallback(() => {
-    setIsExpanded(prev => !prev)
-  }, [])
-
   return (
-    <div 
-      className={`absolute left-[16px] top-[60px] bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 ${
-        isExpanded ? 'h-[calc(100%-76px)]' : 'h-[48px]'
-      }`}
-      style={{ width: isExpanded ? width : 320 }}
-    >
-      <div className="relative h-full">
+    <div className="bg-white rounded-lg shadow-lg overflow-hidden h-full w-full">
+      <div className="h-full flex flex-col">
         {/* Header */}
-        <div className={`flex items-center transition-all duration-300 ${
-          isExpanded ? 'p-4 border-b border-gray-200 justify-between' : 'px-4 py-3 justify-between'
-        }`}>
+        <div className="p-4 border-b border-gray-200 flex justify-between">
           <div className="flex-1">
             <h2 className="text-lg font-semibold">Ingredients ({ingredients.length})</h2>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
             <button
               onClick={handleCopyToClipboard}
               className="p-1 hover:bg-gray-100 rounded-md transition-colors relative group"
@@ -267,49 +224,22 @@ export function IngredientsPanel() {
                 </svg>
               )}
             </button>
-            <button
-              onClick={toggleExpanded}
-              className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-              title={isExpanded ? 'Collapse panel' : 'Expand panel'}
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-              >
-                <path d="M19 9l-7 7-7-7"/>
-              </svg>
-            </button>
           </div>
         </div>
 
         {/* Content */}
-        {isExpanded && (
-          <div className="p-2 overflow-y-auto max-h-[calc(100%-80px)]">
-            {ingredients.map((ingredient) => (
-              <IngredientPanelRow
-                key={ingredient.id}
-                ingredient={ingredient}
-                isSelected={selectedIds.includes(ingredient.id)}
-                onSelect={(e) => handleIngredientSelect(e, ingredient.id)}
-                onDoubleClick={() => handleTitleDoubleClick(ingredient.id)}
-                editor={editor}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Resize handle */}
-        {isExpanded && (
-          <div
-            className="absolute top-0 right-0 w-1 h-full cursor-ew-resize hover:bg-blue-500/50 transition-colors"
-            onMouseDown={handleResizeStart}
-          />
-        )}
+        <div className="p-2 overflow-y-auto flex-1">
+          {ingredients.map((ingredient) => (
+            <IngredientPanelRow
+              key={ingredient.id}
+              ingredient={ingredient}
+              isSelected={selectedIds.includes(ingredient.id)}
+              onSelect={(e) => handleIngredientSelect(e, ingredient.id)}
+              onDoubleClick={() => handleTitleDoubleClick(ingredient.id)}
+              editor={editor}
+            />
+          ))}
+        </div>
       </div>
     </div>
   )

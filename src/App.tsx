@@ -1,4 +1,4 @@
-import { ClipboardEvent, useCallback, useRef } from 'react';
+import { ClipboardEvent, createContext, useCallback, useEffect, useState } from 'react';
 import { Editor, Tldraw } from 'tldraw';
 import 'tldraw/tldraw.css';
 import { IngredientsPanel } from './components/IngredientsPanel';
@@ -7,55 +7,158 @@ import { TextIngredientShape } from './shapes/TextIngredientShape';
 import './styles.css';
 import { handleGlobalPaste } from './utils/pasteHandler';
 
+export const editorContext = createContext({} as { editor: Editor })
+
+type TabType = 'ingredients' | 'board' | 'chat';
+
 export default function App() {
   const customShapeUtils = [
     TextIngredientShape,
     ImageIngredientShape
   ]
 
-  const editorRef = useRef<Editor | null>(null);
+  const [editor, setEditor] = useState<Editor | null>(null)
+  const [activeTab, setActiveTab] = useState<TabType>('ingredients')
+  const [isMobile, setIsMobile] = useState(false)
 
-  const handlePaste = useCallback((e: ClipboardEvent<HTMLDivElement>) => {
-    if (editorRef.current) {
-      handleGlobalPaste(e.nativeEvent, editorRef.current);
-    }
+  // Check if screen is mobile/tablet size
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    
+    // Initial check
+    checkScreenSize();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkScreenSize);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  return (
-    <div className="flex h-screen w-screen bg-gray-100 p-4">
-      {/* Center - TLDraw Canvas */}
-      <div className="flex-1 relative mr-4">
-        <div 
-          className="absolute inset-0 bg-white rounded-2xl shadow-2xl overflow-hidden"
-          onPaste={handlePaste}
-        >
-          <Tldraw
-            autoFocus={true} 
-            persistenceKey="my-persistence-key"
-            shapeUtils={customShapeUtils}
-            onMount={(editor) => {
-              editorRef.current = editor;
-            }}
+  const handlePaste = useCallback((e: ClipboardEvent<HTMLDivElement>) => {
+    if (editor) {
+      handleGlobalPaste(e.nativeEvent, editor);
+    }
+  }, [editor]);
+
+  // Tab navigation component
+  const TabNavigation = () => (
+    <div className="w-full flex border-b border-gray-300 border-b-2">
+      <button 
+        className={`flex-1 pb-2 text-center font-bold text-lg flex items-center justify-center ${activeTab === 'ingredients' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
+        onClick={() => setActiveTab('ingredients')}
+      >
+        Ingredients
+      </button>
+      <button 
+        className={`flex-1 pb-2 text-center font-bold text-lg flex items-center justify-center ${activeTab === 'board' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
+        onClick={() => setActiveTab('board')}
+      >
+        Board
+      </button>
+      <button 
+        className={`flex-1 pb-2 text-center font-bold text-lg flex items-center justify-center ${activeTab === 'chat' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
+        onClick={() => setActiveTab('chat')}
+      >
+        Chat
+      </button>
+    </div>
+  );
+
+  // Content based on active tab for mobile view
+  const renderMobileContent = () => {
+    switch (activeTab) {
+      case 'ingredients':
+        return editor && (
+          <div className="h-full w-full">
+            <editorContext.Provider value={{ editor }}>
+              <IngredientsPanel />
+            </editorContext.Provider>
+          </div>
+        );
+      case 'chat':
+        return (
+          <div className="h-full w-full bg-white rounded-2xl shadow-2xl p-4">
+            <h2 className="text-lg font-semibold mb-4">Chat</h2>
+            <div className="text-gray-500">Coming soon</div>
+          </div>
+        );
+      case 'board':
+        return (
+          <div 
+            className="h-full w-full relative bg-white rounded-2xl shadow-2xl overflow-hidden"
+            onPaste={handlePaste}
           >
-            <IngredientsPanel />
-          </Tldraw>
-        </div>
-      </div>
+            <Tldraw
+              autoFocus={true} 
+              persistenceKey="my-persistence-key"
+              shapeUtils={customShapeUtils}
+              onMount={(editor) => setEditor(editor)}
+            />
+          </div>
+        );
+    }
+  };
 
-      {/* Right side - Suggestions and Chat */}
-      <div className="w-80 flex flex-col gap-4">
-        {/* Suggestions Box */}
-        <div className="flex-1 bg-white rounded-2xl shadow-2xl p-4">
-          <h2 className="text-lg font-semibold mb-4">Suggestions</h2>
-          <div className="text-gray-500">Coming soon</div>
-        </div>
+  return (
+    <div className="flex flex-col h-screen w-screen bg-gray-100 p-4">
+      {isMobile && <TabNavigation />}
 
-        {/* Chat Box */}
-        <div className="flex-1 bg-white rounded-2xl shadow-2xl p-4">
-          <h2 className="text-lg font-semibold mb-4">Chat</h2>
-          <div className="text-gray-500">Coming soon</div>
+      {isMobile ? (
+        // Mobile layout - full height content
+        <div className="flex-1">
+          {renderMobileContent()}
         </div>
-      </div>
+      ) : (
+        // Desktop layout
+        <div className="flex flex-1">
+          {/* Left - Ingredients Panel */}
+          {editor && (
+            <div className="w-80 mr-4">
+              <editorContext.Provider value={{ editor }}>
+                <IngredientsPanel />
+              </editorContext.Provider>
+            </div>
+          )}
+        
+          {/* Center - TLDraw Canvas */}
+          <div className="flex-1 relative mr-4">
+            <div 
+              className="absolute inset-0 bg-white rounded-2xl shadow-2xl overflow-hidden"
+              onPaste={handlePaste}
+            >
+              <Tldraw
+                autoFocus={true} 
+                persistenceKey="my-persistence-key"
+                shapeUtils={customShapeUtils}
+                onMount={(editor) => setEditor(editor)}
+              />
+            </div>
+          </div>
+
+          {/* Right side - Combined Suggestions and Chat */}
+          <div className="w-80">
+            <div className="bg-white rounded-2xl shadow-2xl p-4 flex flex-col h-full">
+              {/* Suggestions Section */}
+              <div className="mb-4 flex-1">
+                <h2 className="text-lg font-semibold mb-4">Suggestions</h2>
+                <div className="text-gray-500">Coming soon</div>
+              </div>
+              
+              {/* Divider */}
+              <div className="border-t border-gray-200 my-4"></div>
+              
+              {/* Chat Section */}
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold mb-4">Chat</h2>
+                <div className="text-gray-500">Coming soon</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
