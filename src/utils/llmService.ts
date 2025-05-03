@@ -3,7 +3,8 @@
  */
 
 export interface OpenAIResponse {
-  text: string;
+  title: string;
+  description: string;
 }
 
 export interface ImageAnalysisRequest {
@@ -21,7 +22,7 @@ export async function generateIngredientSummary(
   content: string,
   title: string,
   isImage: boolean = false,
-): Promise<string> {
+): Promise<OpenAIResponse> {
   try {
     const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/llm`, {
       method: 'POST',
@@ -42,7 +43,8 @@ export async function generateIngredientSummary(
     }
 
     const data = await response.json();
-    return data.text;
+    console.log('Generated title:', data.title);
+    return data;
   } catch (error) {
     console.error("Error generating ingredient summary:", error);
     throw error;

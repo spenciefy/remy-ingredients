@@ -44,9 +44,9 @@ function TextIngredientContent({
 		
 		setIsSummarizing(true)
 		try {
-			console.log('Text content being sent to OpenAI:', shape.props.text);
 			const summary = await generateIngredientSummary(shape.props.text, shape.props.title, false)
-			onAddComment(summary, true)
+			onTitleChange(summary.title)
+			onAddComment(summary.description, true)
 		} catch (error) {
 			console.error('Error generating summary:', error)
 			onAddComment('Failed to generate summary. Please try again.', true)
@@ -202,4 +202,4 @@ export class TextIngredientShape extends BaseBoxShapeUtil<ITextIngredientShape> 
 			shape.props.comments.length * COMMENT_HEIGHT
 		return <rect width={shape.props.w} height={totalHeight} rx={12} />
 	}
-} 
+}

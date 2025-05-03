@@ -65,9 +65,9 @@ function ImageIngredientContent({
 		
 		setIsSummarizing(true)
 		try {
-			console.log('Image URL being sent to OpenAI:', shape.props.imageUrl);
 			const summary = await generateIngredientSummary(shape.props.imageUrl, shape.props.title, true)
-			onAddComment(summary, true)
+			onTitleChange(summary.title)
+			onAddComment(summary.description, true)
 		} catch (error) {
 			console.error('Error generating summary:', error)
 			onAddComment('Failed to generate summary. Please try again.', true)
@@ -285,4 +285,4 @@ export class ImageIngredientShape extends BaseBoxShapeUtil<IImageIngredientShape
 			shape.props.comments.length * COMMENT_HEIGHT
 		return <rect width={shape.props.w} height={totalHeight} rx={12} />
 	}
-} 
+}
