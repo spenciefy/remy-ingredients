@@ -1,6 +1,7 @@
 import { useCallback, useContext, useEffect, useState } from 'react'
 import { TLBaseShape, TLShapeId } from 'tldraw'
 import { editorContext } from '../App'
+import { AddIngredientPopup } from './AddIngredientPopup'
 import { IngredientPanelRow } from './IngredientPanelRow'
 
 // Export the type so it can be used in the row component
@@ -30,6 +31,7 @@ export function IngredientsPanel() {
   const [ingredients, setIngredients] = useState<IngredientShape[]>([])
   const [selectedIds, setSelectedIds] = useState<TLShapeId[]>([])
   const [copySuccess, setCopySuccess] = useState(false)
+  const [showAddPopup, setShowAddPopup] = useState(false)
 
   // Convert image URL to base64
   const getBase64FromUrl = async (url: string): Promise<string> => {
@@ -194,6 +196,17 @@ export function IngredientsPanel() {
           </div>
           <div className="flex items-center">
             <button
+              onClick={() => setShowAddPopup(true)}
+              className="p-1 hover:bg-gray-100 rounded-md transition-colors mr-2"
+              title="Add ingredient"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="16"/>
+                <line x1="8" y1="12" x2="16" y2="12"/>
+              </svg>
+            </button>
+            <button
               onClick={handleCopyToClipboard}
               className="p-1 hover:bg-gray-100 rounded-md transition-colors relative group"
               title="Copy ingredients data"
@@ -241,6 +254,13 @@ export function IngredientsPanel() {
           ))}
         </div>
       </div>
+      {/* Add Ingredient Popup */}
+      {showAddPopup && (
+        <AddIngredientPopup
+          editor={editor}
+          onClose={() => setShowAddPopup(false)}
+        />
+      )}
     </div>
   )
 } 

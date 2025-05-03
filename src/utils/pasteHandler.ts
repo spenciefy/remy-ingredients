@@ -1,71 +1,17 @@
-import { Editor } from 'tldraw'
+import { Editor } from 'tldraw';
+import { addImageIngredient, addTextIngredient } from './ingredientHandler';
+
+// Define Comment type locally based on example
+// interface Comment {
+//   id: string;
+//   text: string;
+//   createdAt: number;
+//   isAI: boolean;
+// }
 
 // Track created ingredient counts for auto-naming
-let imageCount = 0
-let textCount = 0
-
-/**
- * Add an image ingredient to the canvas
- */
-const addImageIngredient = (editor: Editor, dataUrl: string, point: { x: number, y: number }) => {
-  // Create temporary image to get dimensions
-  const img = new Image()
-  img.onload = () => {
-    // Calculate dimensions while maintaining aspect ratio
-    const maxWidth = 600
-    const maxHeight = 600
-    let width = img.naturalWidth
-    let height = img.naturalHeight
-    
-    // Scale down if image is larger than max dimensions
-    if (width > maxWidth || height > maxHeight) {
-      const aspectRatio = width / height
-      if (width / maxWidth > height / maxHeight) {
-        width = maxWidth
-        height = width / aspectRatio
-      } else {
-        height = maxHeight
-        width = height * aspectRatio
-      }
-    }
-
-    // Increment image count and create automatic title
-    imageCount++
-    const title = `Image ${imageCount}`
-
-    editor.createShape({
-      type: 'image-ingredient-shape',
-      props: {
-        title,
-        imageUrl: dataUrl,
-        w: width,
-        h: height,
-      },
-      x: point.x,
-      y: point.y,
-    })
-  }
-  img.src = dataUrl
-}
-
-/**
- * Add a text ingredient to the canvas
- */
-const addTextIngredient = (editor: Editor, text: string, point: { x: number, y: number }) => {
-  // Increment text count and create automatic title
-  textCount++
-  const title = `Text ${textCount}`
-
-  editor.createShape({
-    type: 'text-ingredient-shape',
-    props: {
-      title,
-      text,
-    },
-    x: point.x,
-    y: point.y,
-  })
-}
+// let imageCount = 0 // Removed
+// let textCount = 0 // Removed
 
 /**
  * Handle global paste events for ingredients
