@@ -1,0 +1,327 @@
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { BsImage } from 'react-icons/bs'
+import { FiSend } from 'react-icons/fi'
+import { HiOutlineDocumentText } from 'react-icons/hi'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { editorContext } from '../App'
+
+interface Message {
+  role: 'user' | 'assistant'
+  content: string
+  isStreaming?: boolean
+}
+
+export function ChatWindow() {
+  const { editor } = useContext(editorContext)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [input, setInput] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [ingredients, setIngredients] = useState<{ id: string; title: string; type: string }[]>([])
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const chatContainerRef = useRef<HTMLDivElement>(null)
+
+  // Update ingredients list when shapes change
+  useEffect(() => {
+    function updateIngredients() {
+      const shapes = editor.getCurrentPageShapes()
+      const ingredientShapes = shapes.filter((shape) => {
+        if (shape.type !== 'text-ingredient-shape' && shape.type !== 'image-ingredient-shape') {
+          return false
+        }
+        return 'title' in shape.props
+      })
+
+      setIngredients(
+        ingredientShapes.map(shape => ({
+          id: shape.id,
+          title: shape.props.title || 'Untitled',
+          type: shape.type
+        }))
+      )
+    }
+
+    // Initial update
+    updateIngredients()
+
+    // Subscribe to store changes
+    const unsubscribe = editor.store.listen(updateIngredients)
+    return () => {
+      unsubscribe()
+    }
+  }, [editor])
+
+  const scrollToBottom = () => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
+    }
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  // Convert image URL to base64
+  const getBase64FromUrl = async (url: string): Promise<string> => {
+    try {
+      const response = await fetch(url)
+      const blob = await response.blob()
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      })
+    } catch (error) {
+      console.error('Error converting image to base64:', error)
+      return ''
+    }
+  }
+
+  // Format ingredients data for LLM
+  const formatIngredientsForLLM = async () => {
+    const shapes = editor.getCurrentPageShapes()
+    const ingredientShapes = shapes.filter((shape) => {
+      if (shape.type !== 'text-ingredient-shape' && shape.type !== 'image-ingredient-shape') {
+        return false
+      }
+      return 'title' in shape.props
+    })
+
+    const formattedIngredients = await Promise.all(ingredientShapes.map(async (ingredient, index) => {
+      const title = ingredient.props.title || `Ingredient ${index}`
+      const type = ingredient.type === 'text-ingredient-shape' ? 'text' : 'image'
+      const text = ingredient.props.text || ''
+      
+      let imageData = ''
+      if (type === 'image' && ingredient.props.imageUrl) {
+        imageData = await getBase64FromUrl(ingredient.props.imageUrl)
+      }
+      
+      return [
+        `# Ingredient: ${title}`,
+        `Type: ${type}`,
+        text ? `Content: ${text}` : '',
+        imageData ? `Image: ${imageData}` : '',
+        '' // Empty line for spacing
+      ].filter(line => line !== '').join('\n')
+    }))
+    
+    return formattedIngredients.join('\n\n')
+  }
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!input.trim() || isLoading) return
+
+    // Get formatted ingredients data
+    const ingredientsContext = await formatIngredientsForLLM()
+    const contextPrompt = ingredientsContext ? 
+      `Here are the current ingredients in the workspace:\n\n${ingredientsContext}\n\nUser message: ${input}` :
+      input
+
+    const userMessage = { role: 'user' as const, content: contextPrompt }
+    setMessages(prev => [...prev, { role: 'user', content: input }])
+    setInput('')
+    setIsLoading(true)
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [...messages, userMessage],
+        }),
+      })
+
+      if (!response.ok) throw new Error('Failed to send message')
+
+      const reader = response.body?.getReader()
+      if (!reader) throw new Error('No response body')
+
+      // Add initial assistant message with streaming flag
+      setMessages(prev => [...prev, { role: 'assistant', content: '', isStreaming: true }])
+
+      let assistantMessage = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const text = new TextDecoder().decode(value)
+        assistantMessage += text
+        
+        // Update the streaming message
+        setMessages(prev => {
+          const newMessages = [...prev]
+          const lastMessage = newMessages[newMessages.length - 1]
+          if (lastMessage && lastMessage.isStreaming) {
+            lastMessage.content = assistantMessage
+          }
+          return newMessages
+        })
+      }
+
+      // Remove streaming flag once complete
+      setMessages(prev => {
+        const newMessages = [...prev]
+        const lastMessage = newMessages[newMessages.length - 1]
+        if (lastMessage && lastMessage.isStreaming) {
+          lastMessage.isStreaming = false
+        }
+        return newMessages
+      })
+    } catch (error) {
+      console.error('Error:', error)
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' }
+      ])
+    } finally {
+      setIsLoading(false)
+      textareaRef.current?.focus()
+    }
+  }, [input, messages, isLoading, editor])
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSubmit(e)
+    }
+  }
+
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      textarea.style.height = 'auto'
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`
+    }
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-none p-4 border-b border-gray-200">
+        <h2 className="text-lg font-semibold">Chat</h2>
+      </div>
+      
+      <div 
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-4"
+        style={{ 
+          maxHeight: 'calc(100vh - 180px)',
+          scrollbarWidth: 'thin',
+          scrollbarColor: '#CBD5E1 transparent'
+        }}
+      >
+        {messages.length === 0 && (
+          <div className="text-center text-gray-500 mt-8">
+            <p>Chat about your ingredients</p>
+          </div>
+        )}
+        {messages.map((message, index) => (
+          <div
+            key={index}
+            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div
+              className={`${
+                message.role === 'user' ? 'bg-gray-700 text-white ml-12' : 'bg-gray-100 text-gray-800'
+              } rounded-lg p-3 ${message.role === 'assistant' ? 'w-full' : 'max-w-[88%]'}`}
+            >
+              {message.role === 'assistant' ? (
+                <ReactMarkdown 
+                  remarkPlugins={[remarkGfm]}
+                  className="prose prose-sm max-w-none dark:prose-invert"
+                  components={{
+                    p: ({node, ...props}) => <p className="my-1" {...props} />,
+                    ul: ({node, ...props}) => <ul className="my-2 list-disc pl-4" {...props} />,
+                    ol: ({node, ...props}) => <ol className="my-2 list-decimal pl-4" {...props} />,
+                    li: ({node, ...props}) => <li className="my-0.5" {...props} />,
+                    h1: ({node, ...props}) => <h1 className="text-xl font-bold my-2" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="text-lg font-bold my-2" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="text-base font-bold my-1.5" {...props} />,
+                    code: ({node, inline, ...props}) => 
+                      inline ? (
+                        <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded" {...props} />
+                      ) : (
+                        <code className="block bg-gray-200 dark:bg-gray-700 p-2 rounded my-2 overflow-x-auto" {...props} />
+                      ),
+                    pre: ({node, ...props}) => <pre className="my-2" {...props} />,
+                    blockquote: ({node, ...props}) => (
+                      <blockquote className="border-l-4 border-gray-300 pl-4 my-2 italic" {...props} />
+                    ),
+                  }}
+                >
+                  {message.content}
+                </ReactMarkdown>
+              ) : (
+                <p className="whitespace-pre-wrap">{message.content}</p>
+              )}
+            </div>
+          </div>
+        ))}
+        {isLoading && !messages[messages.length - 1]?.isStreaming && (
+          <div className="flex justify-start">
+            <div className="w-full bg-gray-100 rounded-lg p-3 animate-pulse">
+              <div className="h-4 w-8 bg-gray-300 rounded"></div>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div className="flex-none border-t border-gray-200">
+        <div className="p-4">
+          <form onSubmit={handleSubmit} className="relative">
+            {ingredients.length > 0 && (
+              <div className="bg-gray-100 px-3 py-2 rounded-t-lg flex gap-2 overflow-x-auto whitespace-nowrap border border-b-0 border-gray-300">
+                {ingredients.map(ingredient => (
+                  <span
+                    key={ingredient.id}
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-white text-gray-700 border border-gray-300"
+                  >
+                    {ingredient.type === 'text-ingredient-shape' ? (
+                      <HiOutlineDocumentText className="w-3 h-3" />
+                    ) : (
+                      <BsImage className="w-3 h-3" />
+                    )}
+                    {ingredient.title || 'Untitled'}
+                  </span>
+                ))}
+              </div>
+            )}
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value)
+                adjustTextareaHeight()
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message..."
+              className={`w-full px-4 py-3 pr-12 border border-gray-300 focus:outline-none focus:border-blue-500 resize-none ${
+                ingredients.length > 0 ? 'rounded-b-lg' : 'rounded-lg'
+              }`}
+              style={{
+                minHeight: '44px',
+                maxHeight: '150px'
+              }}
+              disabled={isLoading}
+              rows={1}
+            />
+            <button
+              type="submit"
+              disabled={!input.trim() || isLoading}
+              className="absolute right-3 bottom-[10px] p-2 text-blue-500 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <FiSend size={20} />
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  )
+}

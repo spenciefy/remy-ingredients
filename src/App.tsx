@@ -1,6 +1,7 @@
 import { ClipboardEvent, createContext, useCallback, useEffect, useState } from 'react';
 import { Editor, Tldraw } from 'tldraw';
 import 'tldraw/tldraw.css';
+import { ChatWindow } from './components/ChatWindow';
 import { IngredientsPanel } from './components/IngredientsPanel';
 import { ImageIngredientShape } from './shapes/ImageIngredientShape';
 import { TextIngredientShape } from './shapes/TextIngredientShape';
@@ -80,9 +81,8 @@ export default function App() {
         );
       case 'chat':
         return (
-          <div className="h-full w-full bg-white rounded-2xl shadow-2xl p-4">
-            <h2 className="text-lg font-semibold mb-4">Chat</h2>
-            <div className="text-gray-500">Coming soon</div>
+          <div className="h-full w-full bg-white rounded-2xl shadow-2xl">
+            <ChatWindow />
           </div>
         );
       case 'board':
@@ -138,25 +138,17 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right side - Combined Suggestions and Chat */}
-          <div className="w-80">
-            <div className="bg-white rounded-2xl shadow-2xl p-4 flex flex-col h-full">
-              {/* Suggestions Section */}
-              <div className="mb-4 flex-1">
-                <h2 className="text-lg font-semibold mb-4">Suggestions</h2>
-                <div className="text-gray-500">Coming soon</div>
-              </div>
-              
-              {/* Divider */}
-              <div className="border-t border-gray-200 my-4"></div>
-              
-              {/* Chat Section */}
-              <div className="flex-1">
-                <h2 className="text-lg font-semibold mb-4">Chat</h2>
-                <div className="text-gray-500">Coming soon</div>
+          {/* Right side - Chat */}
+            {editor && (
+            <div className="w-80">
+              <div className="bg-white rounded-2xl shadow-2xl h-full">
+                <editorContext.Provider value={{ editor }}>
+                  <ChatWindow />
+                </editorContext.Provider>
               </div>
             </div>
-          </div>
+          )}
+          
         </div>
       )}
     </div>
