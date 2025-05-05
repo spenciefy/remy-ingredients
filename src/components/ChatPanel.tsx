@@ -232,7 +232,7 @@ export function ChatPanel() {
                         <code className="block bg-gray-200 dark:bg-gray-800 dark:text-gray-100 p-2 rounded my-2 overflow-x-auto" {...rest} />
                       );
                     },
-                    pre: (props) => <pre className="my-2" {...props} />,
+                    pre: (props) => <pre className="my-2 overflow-x-auto bg-gray-200 dark:bg-gray-800 rounded" {...props} />,
                     blockquote: (props) => (
                       <blockquote className="border-l-4 border-gray-300 pl-4 my-2 italic" {...props} />
                     ),
