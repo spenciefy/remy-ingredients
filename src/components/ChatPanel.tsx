@@ -1,13 +1,13 @@
 import { ClassAttributes, HTMLAttributes, useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { BsImage } from 'react-icons/bs'
 import { FiSend } from 'react-icons/fi'
-import { HiOutlineDocumentText } from 'react-icons/hi'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { TLShapeId } from 'tldraw'
 import { editorContext } from '../App'
 import { IngredientProps } from '../types/Ingredient'
 import { Message } from '../types/Message'
 import { formatIngredientsForLLM } from '../utils/formatIngredientsForLLM'
+import { IngredientTag } from './IngredientTag'
 import { MessageContent } from './MessageContent'
 
 export function ChatPanel() {
@@ -15,7 +15,7 @@ export function ChatPanel() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [ingredients, setIngredients] = useState<{ id: string; title: string; type: string }[]>([])
+  const [ingredients, setIngredients] = useState<{ id: TLShapeId; title: string; type: string }[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
@@ -28,14 +28,14 @@ export function ChatPanel() {
         if (shape.type !== 'text-ingredient-shape' && shape.type !== 'image-ingredient-shape') {
           return false
         }
-        return 'title' in shape.props
+        return 'title' in shape.props && shape.meta?.isActive === true
       })
 
       setIngredients(
         ingredientShapes.map(shape => {
           const { title } = shape.props as IngredientProps;
           return {
-            id: shape.id,
+            id: shape.id as TLShapeId,
             title: title || 'Untitled',
             type: shape.type
           };
@@ -241,19 +241,24 @@ export function ChatPanel() {
         <div className="p-4">
           <form onSubmit={handleSubmit} className="relative">
             {ingredients.length > 0 && (
-              <div className="bg-gray-100 px-3 py-2 rounded-t-lg flex gap-2 overflow-x-auto whitespace-nowrap border border-b-0 border-gray-300">
+              <div className="bg-gray-100 px-3 py-1.5 rounded-t-lg flex flex-wrap gap-1.5 border border-b-0 border-gray-300">
                 {ingredients.map(ingredient => (
-                  <span
+                  <IngredientTag
                     key={ingredient.id}
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-white text-gray-700 border border-gray-300"
-                  >
-                    {ingredient.type === 'text-ingredient-shape' ? (
-                      <HiOutlineDocumentText className="w-3 h-3" />
-                    ) : (
-                      <BsImage className="w-3 h-3" />
-                    )}
-                    {ingredient.title || 'Untitled'}
-                  </span>
+                    ingredient={ingredient}
+                    onDeactivate={(id) => {
+                      const shape = editor.getShape(id);
+                      if (shape) {
+                        editor.updateShape({
+                          ...shape,
+                          meta: {
+                            ...shape.meta,
+                            isActive: false
+                          }
+                        });
+                      }
+                    }}
+                  />
                 ))}
               </div>
             )}

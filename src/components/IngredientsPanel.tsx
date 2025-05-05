@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { TLShapeId } from 'tldraw'
 import { editorContext } from '../App'
 import { IngredientShape } from '../types/Ingredient'
@@ -20,8 +20,10 @@ export function IngredientsPanel() {
 	const { editor } = useContext(editorContext)
   const [ingredients, setIngredients] = useState<IngredientShape[]>([])
   const [selectedIds, setSelectedIds] = useState<TLShapeId[]>([])
+  const [activeIngredientIds, setActiveIngredientIds] = useState<TLShapeId[]>([])
   const [copySuccess, setCopySuccess] = useState(false)
   const [showAddPopup, setShowAddPopup] = useState(false)
+  const initializedRef = useRef(false)
 
   // Handle copy to clipboard
   const handleCopyToClipboard = useCallback(async () => {
@@ -55,8 +57,35 @@ export function IngredientsPanel() {
         const bTime = b.meta?.createdAt ? Number(b.meta.createdAt) : 0
         return bTime - aTime // Changed to show newest first
       })
-
+      
       setIngredients(sorted)
+      
+      // Only auto-activate ingredients on initial load
+      if (!initializedRef.current) {
+        initializedRef.current = true
+        
+        // Get currently active ingredients from metadata
+        const activeIds = sorted
+          .filter(ingredient => ingredient.meta?.isActive)
+          .map(ingredient => ingredient.id)
+        
+        // Add any new ingredients that aren't explicitly set to inactive
+        sorted.forEach(ingredient => {
+          if (!Object.prototype.hasOwnProperty.call(ingredient.meta || {}, 'isActive')) {
+            activeIds.push(ingredient.id)
+            // Update the shape's metadata
+            editor.updateShape({
+              ...ingredient,
+              meta: {
+                ...ingredient.meta,
+                isActive: true
+              }
+            })
+          }
+        })
+        
+        setActiveIngredientIds(activeIds)
+      }
     }
 
     // Initial update
@@ -136,6 +165,30 @@ export function IngredientsPanel() {
     editor.setEditingShape(id)
   }, [editor]);
 
+  // Handle toggling ingredient active state
+  const handleToggleActive = useCallback((ingredientId: TLShapeId) => {
+    setActiveIngredientIds(prev => {
+      const willBeActive = !prev.includes(ingredientId)
+      
+      // Update the shape's metadata
+      const shape = editor.getShape(ingredientId)
+      if (shape) {
+        editor.updateShape({
+          ...shape,
+          meta: {
+            ...shape.meta,
+            isActive: willBeActive
+          }
+        })
+      }
+      
+      const newActiveIds = willBeActive ? 
+        [...prev, ingredientId] : 
+        prev.filter(id => id !== ingredientId)
+      return newActiveIds
+    })
+  }, [editor])
+
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden h-full w-full">
       <div className="h-full flex flex-col">
@@ -197,8 +250,10 @@ export function IngredientsPanel() {
               key={ingredient.id}
               ingredient={ingredient}
               isSelected={selectedIds.includes(ingredient.id)}
+              isActive={activeIngredientIds.includes(ingredient.id)}
               onSelect={(e) => handleIngredientSelect(e, ingredient.id)}
               onDoubleClick={() => handleTitleDoubleClick(ingredient.id)}
+              onToggleActive={() => handleToggleActive(ingredient.id)}
               editor={editor}
             />
           ))}

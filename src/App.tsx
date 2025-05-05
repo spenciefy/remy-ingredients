@@ -3,6 +3,7 @@ import { Editor, Tldraw } from 'tldraw';
 import 'tldraw/tldraw.css';
 import { ChatPanel } from './components/ChatPanel';
 import { IngredientsPanel } from './components/IngredientsPanel';
+import { ResizablePanel } from './components/ResizablePanel';
 import { ImageIngredientShape } from './shapes/ImageIngredientShape';
 import { TextIngredientShape } from './shapes/TextIngredientShape';
 import './styles.css';
@@ -21,6 +22,8 @@ export default function App() {
   const [editor, setEditor] = useState<Editor | null>(null)
   const [activeTab, setActiveTab] = useState<TabType>('ingredients')
   const [isMobile, setIsMobile] = useState(false)
+  const [leftPanelWidth, setLeftPanelWidth] = useState(300)
+  const [rightPanelWidth, setRightPanelWidth] = useState(350)
 
   // Check if screen is mobile/tablet size
   useEffect(() => {
@@ -118,15 +121,21 @@ export default function App() {
         <div className="flex flex-1">
           {/* Left - Ingredients Panel */}
           {editor && (
-            <div className="w-80 mr-4">
+            <ResizablePanel
+              width={leftPanelWidth}
+              onWidthChange={setLeftPanelWidth}
+              side="left"
+              minWidth={250}
+              maxWidth={500}
+            >
               <editorContext.Provider value={{ editor }}>
                 <IngredientsPanel />
               </editorContext.Provider>
-            </div>
+            </ResizablePanel>
           )}
         
           {/* Center - TLDraw Canvas */}
-          <div className="flex-1 relative mr-4">
+          <div className="flex-1 relative mx-4">
             <div 
               className="absolute inset-0 bg-white rounded-2xl shadow-2xl overflow-hidden"
               onPaste={handlePaste}
@@ -141,16 +150,21 @@ export default function App() {
           </div>
 
           {/* Right side - Chat */}
-            {editor && (
-            <div className="w-80">
+          {editor && (
+            <ResizablePanel
+              width={rightPanelWidth}
+              onWidthChange={setRightPanelWidth}
+              side="right"
+              minWidth={300}
+              maxWidth={600}
+            >
               <div className="bg-white rounded-2xl shadow-2xl h-full">
                 <editorContext.Provider value={{ editor }}>
                   <ChatPanel />
                 </editorContext.Provider>
               </div>
-            </div>
+            </ResizablePanel>
           )}
-          
         </div>
       )}
     </div>

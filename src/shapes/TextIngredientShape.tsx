@@ -162,7 +162,6 @@ export class TextIngredientShape extends BaseBoxShapeUtil<ITextIngredientShape> 
 			<TextIngredientContent
 				shape={shape}
 				onTitleChange={(newTitle) => {
-					console.log("TextIngredientShape: Title changing for shape id", shape.id, "to:", newTitle);
 					this.editor.updateShape<ITextIngredientShape>({
 						id: shape.id,
 						type: 'text-ingredient-shape',
@@ -171,7 +170,6 @@ export class TextIngredientShape extends BaseBoxShapeUtil<ITextIngredientShape> 
 							title: newTitle
 						},
 					})
-					console.log("TextIngredientShape: Title update complete for shape id", shape.id, "new title:", newTitle);
 				}}
 				onDelete={() => {
 					this.editor.deleteShape(shape.id)

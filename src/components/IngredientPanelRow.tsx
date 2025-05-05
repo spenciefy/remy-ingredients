@@ -6,16 +6,20 @@ import { getIngredientTitle } from './IngredientsPanel'
 interface IngredientPanelRowProps {
   ingredient: IngredientShape
   isSelected: boolean
+  isActive: boolean
   onSelect: (e: React.MouseEvent) => void
   onDoubleClick: () => void
+  onToggleActive: () => void
   editor: Editor
 }
 
 export function IngredientPanelRow({
   ingredient,
   isSelected,
+  isActive,
   onSelect,
   onDoubleClick,
+  onToggleActive,
   editor
 }: IngredientPanelRowProps) {
   return (
@@ -81,6 +85,28 @@ export function IngredientPanelRow({
             {getIngredientTitle(ingredient)}
           </span>
         )}
+
+        {/* Active Toggle Checkbox */}
+        <div 
+          className="flex-shrink-0"
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggleActive()
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={isActive}
+            onClick={(e) => {
+              e.stopPropagation()
+            }}
+            onChange={(e) => {
+              e.stopPropagation()
+              onToggleActive()
+            }}
+            className="h-4 w-4 text-blue-600 rounded border-gray-300 cursor-pointer"
+          />
+        </div>
       </div>
     </div>
   )

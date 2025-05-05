@@ -15,12 +15,12 @@ type ContentItem = {
  * Each text and image is a separate entry in the content array
  */
 export async function formatIngredientsForLLM(shapes: TLShape[]): Promise<ContentItem[]> {
-  // Filter for ingredient shapes
+  // Filter for active ingredient shapes
   const ingredientShapes = shapes.filter((shape) => {
     if (shape.type !== 'text-ingredient-shape' && shape.type !== 'image-ingredient-shape') {
       return false
     }
-    return 'title' in shape.props
+    return 'title' in shape.props && shape.meta?.isActive === true
   })
 
   const contentItems: ContentItem[] = []
@@ -75,12 +75,12 @@ export async function formatIngredientsForLLM(shapes: TLShape[]): Promise<Conten
  * Formats ingredients into a markdown-friendly format for clipboard
  */
 export async function formatIngredientsForClipboard(shapes: TLShape[]): Promise<string> {
-  // Filter for ingredient shapes
+  // Filter for active ingredient shapes
   const ingredientShapes = shapes.filter((shape) => {
     if (shape.type !== 'text-ingredient-shape' && shape.type !== 'image-ingredient-shape') {
       return false
     }
-    return 'title' in shape.props
+    return 'title' in shape.props && shape.meta?.isActive === true
   })
 
   let formattedText = '# Ingredients in the workspace\n\n'
