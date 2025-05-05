@@ -19,6 +19,7 @@ export function ChatPanel() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true)
 
   // Update ingredients list when shapes change
   useEffect(() => {
@@ -59,9 +60,31 @@ export function ChatPanel() {
     }
   }
 
+  // Auto-scroll only when user is at (or near) the bottom
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    if (shouldAutoScroll) {
+      scrollToBottom()
+    }
+  }, [messages, shouldAutoScroll])
+
+  // Track whether the user has scrolled away from the bottom
+  useEffect(() => {
+    const container = chatContainerRef.current
+    if (!container) return
+
+    const handleScroll = () => {
+      const threshold = 20 // px tolerance from the bottom
+      const atBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - threshold
+      setShouldAutoScroll(atBottom)
+    }
+
+    // Attach listener
+    container.addEventListener('scroll', handleScroll)
+    // Initial determination
+    handleScroll()
+
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
