@@ -164,19 +164,15 @@ export function ChatPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-h-full min-h-0">
       <div className="flex-none p-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold">Chat</h2>
       </div>
       
+      {/* Scrollable messages area – flex child allowed to shrink */}
       <div 
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4"
-        style={{ 
-          maxHeight: 'calc(100vh - 180px)',
-          scrollbarWidth: 'thin',
-          scrollbarColor: '#CBD5E1 transparent'
-        }}
+        className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600"
       >
         {messages.length === 0 && (
           <div className="text-center text-gray-500 mt-8">
@@ -237,11 +233,11 @@ export function ChatPanel() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="flex-none border-t border-gray-200">
+      <div className="flex-none">
         <div className="p-4">
           <form onSubmit={handleSubmit} className="relative">
             {ingredients.length > 0 && (
-              <div className="bg-gray-100 px-3 py-1.5 rounded-t-lg flex flex-wrap gap-1.5 border border-b-0 border-gray-300">
+              <div className="bg-gray-100 px-3 py-1.5 rounded-t-lg flex flex-wrap gap-1.5 border border-b-0 border-gray-300 max-h-24 overflow-y-auto">
                 {ingredients.map(ingredient => (
                   <IngredientTag
                     key={ingredient.id}
