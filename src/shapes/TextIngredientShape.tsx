@@ -1,20 +1,10 @@
 import { useState } from 'react'
-import { BaseBoxShapeUtil, HTMLContainer, RecordProps, T, TLBaseShape } from 'tldraw'
+import { BaseBoxShapeUtil, HTMLContainer, RecordProps, T } from 'tldraw'
 import { BASE_FOOTER_HEIGHT, COMMENT_HEIGHT } from '../constants/shapes'
 import { Comment, CommentValidator } from '../types/Comment'
+import { ITextIngredientShape } from '../types/Ingredient'
 import { generateIngredientSummary } from '../utils/llmService'
 import { IngredientFooter } from './IngredientFooter'
-
-type ITextIngredientShape = TLBaseShape<
-	'text-ingredient-shape',
-	{
-		w: number
-		h: number
-		title: string
-		text: string
-		comments: Comment[]
-	}
->
 
 function TextIngredientContent({ 
 	shape,

@@ -1,20 +1,9 @@
 import { useCallback, useContext, useEffect, useState } from 'react'
-import { TLBaseShape, TLShapeId } from 'tldraw'
+import { TLShapeId } from 'tldraw'
 import { editorContext } from '../App'
+import { IngredientShape } from '../types/Ingredient'
 import { AddIngredientPopup } from './AddIngredientPopup'
 import { IngredientPanelRow } from './IngredientPanelRow'
-
-// Export the type so it can be used in the row component
-export type IngredientShape = TLBaseShape<
-  'text-ingredient-shape' | 'image-ingredient-shape',
-  {
-    w: number
-    h: number
-    title: string
-    text?: string
-    imageUrl?: string
-  }
->
 
 // Add helper function for fallback title
 export const getIngredientTitle = (ingredient: IngredientShape): string => {
@@ -55,17 +44,20 @@ export function IngredientsPanel() {
     const formattedIngredients = await Promise.all(ingredients.map(async (ingredient, index) => {
       const title = ingredient.props.title || `Ingredient ${index}`
       const type = ingredient.type === 'text-ingredient-shape' ? 'text' : 'image'
-      const text = ingredient.props.text || ''
       
+      let content = ''
       let imageData = ''
-      if (type === 'image' && ingredient.props.imageUrl) {
+      
+      if (ingredient.type === 'text-ingredient-shape') {
+        content = ingredient.props.text
+      } else if (ingredient.type === 'image-ingredient-shape' && ingredient.props.imageUrl) {
         imageData = await getBase64FromUrl(ingredient.props.imageUrl)
       }
       
       return [
         `# Ingredient: ${title}`,
         `Type: ${type}`,
-        text ? `Content: ${text}` : '',
+        content ? `Content: ${content}` : '',
         imageData ? `Image: ${imageData}` : '',
         '' // Empty line for spacing
       ].filter(line => line !== '').join('\n')

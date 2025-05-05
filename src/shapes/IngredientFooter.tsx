@@ -3,7 +3,7 @@ import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import { FiEdit2, FiX } from 'react-icons/fi'
 import { RiFlashlightFill } from 'react-icons/ri'
 import { Comment } from '../types/Comment'
-import { CommentSection } from './CommentSection'
+import { IngredientComments } from './IngredientComments'
 
 interface IngredientShapeProps {
 	title: string
@@ -169,7 +169,7 @@ export function IngredientFooter({
 			</div>
 
 			{/* Comments section */}
-			<CommentSection
+			<IngredientComments
 				comments={comments}
 				onAddComment={onAddComment}
 				onDeleteComment={onDeleteComment}

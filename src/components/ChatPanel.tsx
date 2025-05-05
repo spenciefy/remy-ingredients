@@ -5,19 +5,8 @@ import { HiOutlineDocumentText } from 'react-icons/hi'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { editorContext } from '../App'
-
-interface Message {
-  role: 'user' | 'assistant'
-  content: string
-  isStreaming?: boolean
-}
-
-// Custom props for ingredient shapes
-type IngredientProps = {
-  title?: string;
-  text?: string;
-  imageUrl?: string;
-};
+import { IngredientProps } from '../types/Ingredient'
+import { Message } from '../types/Message'
 
 export function ChatPanel() {
   const { editor } = useContext(editorContext)

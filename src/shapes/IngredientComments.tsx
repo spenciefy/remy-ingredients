@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { CommentProps } from '../types/Comment'
 
-export function CommentSection({ comments, onAddComment, onDeleteComment }: CommentProps) {
+export function IngredientComments({ comments, onAddComment, onDeleteComment }: CommentProps) {
   const [newComment, setNewComment] = useState('')
   const commentsEndRef = useRef<HTMLDivElement>(null)
   const prevCommentsLengthRef = useRef(comments.length)

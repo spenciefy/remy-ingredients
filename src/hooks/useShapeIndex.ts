@@ -1,16 +1,6 @@
 import { useCallback } from 'react'
-import { TLBaseShape, useEditor } from 'tldraw'
-
-type IngredientShape = TLBaseShape<
-  'text-ingredient-shape' | 'image-ingredient-shape',
-  {
-    w: number
-    h: number
-    title: string
-    text?: string
-    imageUrl?: string
-  }
->
+import { useEditor } from 'tldraw'
+import { IngredientShape } from '../types/Ingredient'
 
 export function useShapeIndex() {
   const editor = useEditor()

@@ -1,6 +1,7 @@
 import { HiOutlineDocumentText } from 'react-icons/hi'
 import { Editor } from 'tldraw'
-import { IngredientShape, getIngredientTitle } from './IngredientsPanel'
+import { IngredientShape } from '../types/Ingredient'
+import { getIngredientTitle } from './IngredientsPanel'
 
 interface IngredientPanelRowProps {
   ingredient: IngredientShape
