@@ -63,29 +63,14 @@ export function IngredientsPanel() {
       // Only auto-activate ingredients on initial load
       if (!initializedRef.current) {
         initializedRef.current = true
-        
-        // Get currently active ingredients from metadata
-        const activeIds = sorted
-          .filter(ingredient => ingredient.meta?.isActive)
-          .map(ingredient => ingredient.id)
-        
-        // Add any new ingredients that aren't explicitly set to inactive
-        sorted.forEach(ingredient => {
-          if (!Object.prototype.hasOwnProperty.call(ingredient.meta || {}, 'isActive')) {
-            activeIds.push(ingredient.id)
-            // Update the shape's metadata
-            editor.updateShape({
-              ...ingredient,
-              meta: {
-                ...ingredient.meta,
-                isActive: true
-              }
-            })
-          }
-        })
-        
-        setActiveIngredientIds(activeIds)
       }
+      
+      // Get currently active ingredients from metadata
+      const activeIds = sorted
+        .filter(ingredient => ingredient.meta?.isActive)
+        .map(ingredient => ingredient.id)
+      
+      setActiveIngredientIds(activeIds)
     }
 
     // Initial update
