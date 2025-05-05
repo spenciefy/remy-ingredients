@@ -1,7 +1,7 @@
 import { ClipboardEvent, createContext, useCallback, useEffect, useState } from 'react';
 import { Editor, Tldraw } from 'tldraw';
 import 'tldraw/tldraw.css';
-import { ChatWindow } from './components/ChatWindow';
+import { ChatPanel } from './components/ChatPanel';
 import { IngredientsPanel } from './components/IngredientsPanel';
 import { ImageIngredientShape } from './shapes/ImageIngredientShape';
 import { TextIngredientShape } from './shapes/TextIngredientShape';
@@ -80,9 +80,11 @@ export default function App() {
           </div>
         );
       case 'chat':
-        return (
+        return editor && (
           <div className="h-full w-full bg-white rounded-2xl shadow-2xl">
-            <ChatWindow />
+            <editorContext.Provider value={{ editor }}>
+              <ChatPanel />
+            </editorContext.Provider>
           </div>
         );
       case 'board':
@@ -143,7 +145,7 @@ export default function App() {
             <div className="w-80">
               <div className="bg-white rounded-2xl shadow-2xl h-full">
                 <editorContext.Provider value={{ editor }}>
-                  <ChatWindow />
+                  <ChatPanel />
                 </editorContext.Provider>
               </div>
             </div>
