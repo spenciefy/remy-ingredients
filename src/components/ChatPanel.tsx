@@ -7,6 +7,8 @@ import remarkGfm from 'remark-gfm'
 import { editorContext } from '../App'
 import { IngredientProps } from '../types/Ingredient'
 import { Message } from '../types/Message'
+import { formatIngredientsForLLM } from '../utils/formatIngredientsForLLM'
+import { MessageContent } from './MessageContent'
 
 export function ChatPanel() {
   const { editor } = useContext(editorContext)
@@ -61,63 +63,27 @@ export function ChatPanel() {
     scrollToBottom()
   }, [messages])
 
-  // Convert image URL to base64
-  const getBase64FromUrl = async (url: string): Promise<string> => {
-    try {
-      const response = await fetch(url)
-      const blob = await response.blob()
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
-        reader.onerror = reject
-        reader.readAsDataURL(blob)
-      })
-    } catch (error) {
-      console.error('Error converting image to base64:', error)
-      return ''
-    }
-  }
-
-  // Format ingredients data for LLM
-  const formatIngredientsForLLM = async () => {
-    const shapes = editor.getCurrentPageShapes()
-    const ingredientShapes = shapes.filter((shape) => {
-      if (shape.type !== 'text-ingredient-shape' && shape.type !== 'image-ingredient-shape') {
-        return false
-      }
-      return 'title' in shape.props
-    })
-
-    const formattedIngredients = await Promise.all(ingredientShapes.map(async (ingredient, index) => {
-      const { title, text, imageUrl } = ingredient.props as IngredientProps;
-      const type = ingredient.type === 'text-ingredient-shape' ? 'text' : 'image';
-      let imageData = '';
-      if (type === 'image' && imageUrl) {
-        imageData = await getBase64FromUrl(imageUrl);
-      }
-      return [
-        `# Ingredient: ${title || `Ingredient ${index}`}`,
-        `Type: ${type}`,
-        text ? `Content: ${text}` : '',
-        imageData ? `Image: ${imageData}` : '',
-        '' // Empty line for spacing
-      ].filter(line => line !== '').join('\n');
-    }))
-    
-    return formattedIngredients.join('\n\n')
-  }
-
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim() || isLoading) return
 
     // Get formatted ingredients data
-    const ingredientsContext = await formatIngredientsForLLM()
-    const contextPrompt = ingredientsContext ? 
-      `Here are the current ingredients in the workspace:\n\n${ingredientsContext}\n\nUser message: ${input}` :
-      input
+    const shapes = editor.getCurrentPageShapes()
+    const contentItems = await formatIngredientsForLLM(shapes)
+    
+    // Combine content items with user input at the end
+    const userMessage = { 
+      role: 'user' as const, 
+      content: [
+        ...(contentItems || []),
+        { type: 'text', text: input }
+      ]
+    }
 
-    const userMessage = { role: 'user' as const, content: contextPrompt }
+    console.log('New user message:', userMessage)
+    console.log('All messages being sent to API:', [...messages, userMessage])
+    
+    // Show the user's input in the chat
     setMessages(prev => [...prev, { role: 'user', content: input }])
     setInput('')
     setIsLoading(true)
@@ -253,10 +219,10 @@ export function ChatPanel() {
                     ),
                   }}
                 >
-                  {message.content}
+                  {typeof message.content === 'string' ? message.content : ''}
                 </ReactMarkdown>
               ) : (
-                <p className="whitespace-pre-wrap">{message.content}</p>
+                <MessageContent content={message.content} />
               )}
             </div>
           </div>

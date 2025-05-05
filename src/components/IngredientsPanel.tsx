@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect, useState } from 'react'
 import { TLShapeId } from 'tldraw'
 import { editorContext } from '../App'
 import { IngredientShape } from '../types/Ingredient'
+import { formatIngredientsForClipboard } from '../utils/formatIngredientsForLLM'
 import { AddIngredientPopup } from './AddIngredientPopup'
 import { IngredientPanelRow } from './IngredientPanelRow'
 
@@ -22,61 +23,18 @@ export function IngredientsPanel() {
   const [copySuccess, setCopySuccess] = useState(false)
   const [showAddPopup, setShowAddPopup] = useState(false)
 
-  // Convert image URL to base64
-  const getBase64FromUrl = async (url: string): Promise<string> => {
-    try {
-      const response = await fetch(url)
-      const blob = await response.blob()
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
-        reader.onerror = reject
-        reader.readAsDataURL(blob)
-      })
-    } catch (error) {
-      console.error('Error converting image to base64:', error)
-      return ''
-    }
-  }
-
-  // Format ingredients data for LLM
-  const formatIngredientsForLLM = useCallback(async () => {
-    const formattedIngredients = await Promise.all(ingredients.map(async (ingredient, index) => {
-      const title = ingredient.props.title || `Ingredient ${index}`
-      const type = ingredient.type === 'text-ingredient-shape' ? 'text' : 'image'
-      
-      let content = ''
-      let imageData = ''
-      
-      if (ingredient.type === 'text-ingredient-shape') {
-        content = ingredient.props.text
-      } else if (ingredient.type === 'image-ingredient-shape' && ingredient.props.imageUrl) {
-        imageData = await getBase64FromUrl(ingredient.props.imageUrl)
-      }
-      
-      return [
-        `# Ingredient: ${title}`,
-        `Type: ${type}`,
-        content ? `Content: ${content}` : '',
-        imageData ? `Image: ${imageData}` : '',
-        '' // Empty line for spacing
-      ].filter(line => line !== '').join('\n')
-    }))
-    
-    return formattedIngredients.join('\n\n')
-  }, [ingredients])
-
   // Handle copy to clipboard
   const handleCopyToClipboard = useCallback(async () => {
     try {
-      const formattedData = await formatIngredientsForLLM()
-      await navigator.clipboard.writeText(formattedData)
+      const shapes = editor.getCurrentPageShapes()
+      const formattedText = await formatIngredientsForClipboard(shapes)
+      await navigator.clipboard.writeText(formattedText)
       setCopySuccess(true)
       setTimeout(() => setCopySuccess(false), 2000)
     } catch (err) {
       console.error('Failed to copy:', err)
     }
-  }, [formatIngredientsForLLM])
+  }, [editor])
 
   // Update ingredients list when shapes change
   useEffect(() => {

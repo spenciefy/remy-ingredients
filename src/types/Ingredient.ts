@@ -8,6 +8,7 @@ export type IngredientProps = {
   title?: string
   text?: string
   imageUrl?: string
+  comments?: Comment[]
 }
 
 export type ITextIngredientShape = TLBaseShape<
