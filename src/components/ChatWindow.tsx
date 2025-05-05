@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { ClassAttributes, HTMLAttributes, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { BsImage } from 'react-icons/bs'
 import { FiSend } from 'react-icons/fi'
 import { HiOutlineDocumentText } from 'react-icons/hi'
@@ -11,6 +11,13 @@ interface Message {
   content: string
   isStreaming?: boolean
 }
+
+// Custom props for ingredient shapes
+type IngredientProps = {
+  title?: string;
+  text?: string;
+  imageUrl?: string;
+};
 
 export function ChatWindow() {
   const { editor } = useContext(editorContext)
@@ -34,11 +41,14 @@ export function ChatWindow() {
       })
 
       setIngredients(
-        ingredientShapes.map(shape => ({
-          id: shape.id,
-          title: shape.props.title || 'Untitled',
-          type: shape.type
-        }))
+        ingredientShapes.map(shape => {
+          const { title } = shape.props as IngredientProps;
+          return {
+            id: shape.id,
+            title: title || 'Untitled',
+            type: shape.type
+          };
+        })
       )
     }
 
@@ -90,22 +100,19 @@ export function ChatWindow() {
     })
 
     const formattedIngredients = await Promise.all(ingredientShapes.map(async (ingredient, index) => {
-      const title = ingredient.props.title || `Ingredient ${index}`
-      const type = ingredient.type === 'text-ingredient-shape' ? 'text' : 'image'
-      const text = ingredient.props.text || ''
-      
-      let imageData = ''
-      if (type === 'image' && ingredient.props.imageUrl) {
-        imageData = await getBase64FromUrl(ingredient.props.imageUrl)
+      const { title, text, imageUrl } = ingredient.props as IngredientProps;
+      const type = ingredient.type === 'text-ingredient-shape' ? 'text' : 'image';
+      let imageData = '';
+      if (type === 'image' && imageUrl) {
+        imageData = await getBase64FromUrl(imageUrl);
       }
-      
       return [
-        `# Ingredient: ${title}`,
+        `# Ingredient: ${title || `Ingredient ${index}`}`,
         `Type: ${type}`,
         text ? `Content: ${text}` : '',
         imageData ? `Image: ${imageData}` : '',
         '' // Empty line for spacing
-      ].filter(line => line !== '').join('\n')
+      ].filter(line => line !== '').join('\n');
     }))
     
     return formattedIngredients.join('\n\n')
@@ -236,21 +243,23 @@ export function ChatWindow() {
                   remarkPlugins={[remarkGfm]}
                   className="prose prose-sm max-w-none dark:prose-invert"
                   components={{
-                    p: ({node, ...props}) => <p className="my-1" {...props} />,
-                    ul: ({node, ...props}) => <ul className="my-2 list-disc pl-4" {...props} />,
-                    ol: ({node, ...props}) => <ol className="my-2 list-decimal pl-4" {...props} />,
-                    li: ({node, ...props}) => <li className="my-0.5" {...props} />,
-                    h1: ({node, ...props}) => <h1 className="text-xl font-bold my-2" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="text-lg font-bold my-2" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="text-base font-bold my-1.5" {...props} />,
-                    code: ({node, inline, ...props}) => 
-                      inline ? (
-                        <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded" {...props} />
+                    p: (props) => <p className="my-1" {...props} />,
+                    ul: (props) => <ul className="my-2 list-disc pl-4" {...props} />,
+                    ol: (props) => <ol className="my-2 list-decimal pl-4" {...props} />,
+                    li: (props) => <li className="my-0.5" {...props} />,
+                    h1: (props) => <h1 className="text-xl font-bold my-2" {...props} />,
+                    h2: (props) => <h2 className="text-lg font-bold my-2" {...props} />,
+                    h3: (props) => <h3 className="text-base font-bold my-1.5" {...props} />,
+                    code: (props) => {
+                      const { inline, ...rest } = props as { inline?: boolean } & ClassAttributes<HTMLElement> & HTMLAttributes<HTMLElement>;
+                      return inline ? (
+                        <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded" {...rest} />
                       ) : (
-                        <code className="block bg-gray-200 dark:bg-gray-700 p-2 rounded my-2 overflow-x-auto" {...props} />
-                      ),
-                    pre: ({node, ...props}) => <pre className="my-2" {...props} />,
-                    blockquote: ({node, ...props}) => (
+                        <code className="block bg-gray-200 dark:bg-gray-700 p-2 rounded my-2 overflow-x-auto" {...rest} />
+                      );
+                    },
+                    pre: (props) => <pre className="my-2" {...props} />,
+                    blockquote: (props) => (
                       <blockquote className="border-l-4 border-gray-300 pl-4 my-2 italic" {...props} />
                     ),
                   }}
