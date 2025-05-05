@@ -204,9 +204,9 @@ export function ChatPanel() {
                     code: (props) => {
                       const { inline, ...rest } = props as { inline?: boolean } & ClassAttributes<HTMLElement> & HTMLAttributes<HTMLElement>;
                       return inline ? (
-                        <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded" {...rest} />
+                        <code className="bg-gray-200 dark:bg-gray-800 dark:text-gray-100 px-1 py-0.5 rounded" {...rest} />
                       ) : (
-                        <code className="block bg-gray-200 dark:bg-gray-700 p-2 rounded my-2 overflow-x-auto" {...rest} />
+                        <code className="block bg-gray-200 dark:bg-gray-800 dark:text-gray-100 p-2 rounded my-2 overflow-x-auto" {...rest} />
                       );
                     },
                     pre: (props) => <pre className="my-2" {...props} />,
