@@ -1,8 +1,8 @@
 import { ClipboardEvent, createContext, useCallback, useEffect, useState } from 'react';
 import { Editor, Tldraw } from 'tldraw';
 import 'tldraw/tldraw.css';
-import { ChatPanel } from './components/ChatPanel';
-import { IngredientsPanel } from './components/IngredientsPanel';
+import { ChatPanel } from './components/Chat/ChatPanel';
+import { IngredientsPanel } from './components/Ingredients/IngredientsPanel';
 import { ResizablePanel } from './components/ResizablePanel';
 import { myAssetStore } from './lib/tldrawAssetStore';
 import { ImageIngredientShape } from './shapes/ImageIngredientShape';

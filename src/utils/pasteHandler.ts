@@ -1,18 +1,6 @@
 import { Editor } from 'tldraw';
 import { addImageIngredient, addTextIngredient } from './ingredientHandler';
 
-// Define Comment type locally based on example
-// interface Comment {
-//   id: string;
-//   text: string;
-//   createdAt: number;
-//   isAI: boolean;
-// }
-
-// Track created ingredient counts for auto-naming
-// let imageCount = 0 // Removed
-// let textCount = 0 // Removed
-
 /**
  * Handle global paste events for ingredients
  */

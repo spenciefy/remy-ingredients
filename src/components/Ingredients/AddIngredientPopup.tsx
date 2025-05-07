@@ -1,6 +1,6 @@
 import React, { DragEvent, useEffect, useRef, useState } from 'react';
 import { Editor } from 'tldraw';
-import { addImageIngredient, addTextIngredient } from '../utils/ingredientHandler';
+import { addImageIngredient, addTextIngredient } from '../../utils/ingredientHandler';
 
 interface AddIngredientPopupProps {
   editor: Editor;

@@ -1,8 +1,8 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { TLShapeId } from 'tldraw'
-import { editorContext } from '../App'
-import { IngredientShape } from '../types/Ingredient'
-import { formatIngredientsForClipboard } from '../utils/formatIngredientsForLLM'
+import { editorContext } from '../../App'
+import { IngredientShape } from '../../types/Ingredient'
+import { formatIngredientsForClipboard } from '../../utils/formatIngredientsForLLM'
 import { AddIngredientPopup } from './AddIngredientPopup'
 import { IngredientPanelRow } from './IngredientPanelRow'
 

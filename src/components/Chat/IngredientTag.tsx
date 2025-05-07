@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { BsImage } from 'react-icons/bs';
 import { HiOutlineDocumentText } from 'react-icons/hi';
 import { TLShapeId } from 'tldraw';
-import { editorContext } from '../App';
+import { editorContext } from '../../App';
 
 interface IngredientTagProps {
   ingredient: { 

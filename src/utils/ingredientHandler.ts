@@ -1,7 +1,7 @@
 import { Editor } from 'tldraw';
 import { uploadImageFile } from '../lib/tldrawAssetStore';
 import { Comment } from '../types/Comment';
-import { generateIngredientSummary } from './llmService';
+import { generateIngredientSummary } from './ingredientSummaryService';
 
 /**
  * Converts a data URL string to a File object.

@@ -64,6 +64,8 @@ export const myAssetStore: TLAssetStore = {
   },
 
   resolve(asset: TLAsset, _ctx: TLAssetContext) {
+    // Use _ctx in a no-op to avoid the unused variable linter warning
+    void _ctx;
     if (asset.props?.src) {
       return asset.props.src as string;
     }

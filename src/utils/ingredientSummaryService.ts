@@ -2,14 +2,9 @@
  * Service to interact with LLM API for generating summaries of ingredients
  */
 
-export interface OpenAIResponse {
+interface IngredientSummary {
   title: string;
   description: string;
-}
-
-export interface ImageAnalysisRequest {
-  imageUrl: string;
-  prompt: string;
 }
 
 /**
@@ -22,7 +17,7 @@ export async function generateIngredientSummary(
   content: string,
   title: string,
   isImage: boolean = false,
-): Promise<OpenAIResponse> {
+): Promise<IngredientSummary> {
   try {
     const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/llm`, {
       method: 'POST',

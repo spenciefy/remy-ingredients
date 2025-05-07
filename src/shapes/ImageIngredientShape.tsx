@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { BaseBoxShapeUtil, HTMLContainer, RecordProps, T } from 'tldraw'
-import { BASE_FOOTER_HEIGHT, COMMENT_HEIGHT } from '../constants/shapes'
 import { Comment, CommentValidator } from '../types/Comment'
 import { IImageIngredientShape } from '../types/Ingredient'
-import { generateIngredientSummary } from '../utils/llmService'
+import { generateIngredientSummary } from '../utils/ingredientSummaryService'
+import { BASE_FOOTER_HEIGHT, COMMENT_HEIGHT } from './constants'
 import { IngredientFooter } from './IngredientFooter'
 
 function ImageIngredientContent({

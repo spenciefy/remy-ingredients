@@ -1,5 +1,5 @@
-import { ContentItem } from '../types/Message'
-import { ImageDesignArtifact } from '../utils/chatHandler'
+import { ContentItem } from '../../types/Message'
+import { ImageDesignArtifact } from '../../utils/chatHandler'
 
 interface MessageContentProps {
   content: string | ContentItem[] | ImageDesignArtifact[]

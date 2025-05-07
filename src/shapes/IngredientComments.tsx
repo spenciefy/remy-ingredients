@@ -56,7 +56,7 @@ export function IngredientComments({ comments, onAddComment, onDeleteComment }: 
             <div className="flex-1">
               <div className="flex items-center gap-2 justify-between">
                 <div className="flex flex-grow flex-col items-start gap-1">
-                  <div className="text-xs font-bold">{comment.isAI ? 'Remy Summary' : 'You'}</div>
+                  <div className="text-xs font-bold">{comment.isAI ? 'Description' : 'You'}</div>
                   <div className="text-xs">{comment.text}</div>
                 </div>
                 <div className="flex items-center gap-1">

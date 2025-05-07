@@ -112,7 +112,7 @@ export function IngredientFooter({
 								marginLeft: '4px',
 							}}
 							onPointerDown={(e) => e.stopPropagation()}
-							title="Remy Summary"
+							title="Description"
 							disabled={isSummarizing}
 						>
 							{isSummarizing ? (
