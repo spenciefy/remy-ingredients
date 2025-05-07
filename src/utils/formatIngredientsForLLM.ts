@@ -1,35 +1,25 @@
-import { TLShape } from 'tldraw'
-import { Comment } from '../types/Comment'
-import { IngredientProps } from '../types/Ingredient'
+import { TLShape } from 'tldraw';
+import { Comment } from '../types/Comment';
+import { IngredientProps } from '../types/Ingredient';
 
-type ContentItem = {
-  type: 'text' | 'image_url'
-  text?: string
-  image_url?: {
-    url: string
-  }
-}
-
-// Helper types for the new API content structure
-type ApiInputTextItem = {
+// Standardized API item types
+export type ApiInputTextItem = {
   type: 'input_text';
   text: string;
 };
 
-type ApiInputImageItem = {
+export type ApiInputImageItem = {
   type: 'input_image';
   image_url: string;
-  detail: 'auto';
+  detail: 'auto'; // Or 'low', 'high' - keeping 'auto' as per previous def
 };
 
-type ApiContentItem = ApiInputTextItem | ApiInputImageItem;
+export type ApiInputItem = ApiInputTextItem | ApiInputImageItem;
 
 /**
- * Formats ingredients into OpenAI API compatible format
- * Each text and image is a separate entry in the content array
+ * Formats ingredients into an array of ApiInputTextItem and ApiInputImageItem objects.
  */
-export async function formatIngredientsForLLM(shapes: TLShape[]): Promise<ContentItem[]> {
-  // Filter for active ingredient shapes
+export async function formatIngredientsForLLM(shapes: TLShape[]): Promise<ApiInputItem[]> {
   const ingredientShapes = shapes.filter((shape) => {
     if (shape.type !== 'text-ingredient-shape' && shape.type !== 'image-ingredient-shape') {
       return false
@@ -37,23 +27,20 @@ export async function formatIngredientsForLLM(shapes: TLShape[]): Promise<Conten
     return 'title' in shape.props && shape.meta?.isActive === true
   })
 
-  const contentItems: ContentItem[] = []
+  const formattedIngredients: ApiInputItem[] = []
 
-  // Add initial text content
   if (ingredientShapes.length > 0) {
-    contentItems.push({
-      type: 'text',
+    formattedIngredients.push({
+      type: 'input_text',
       text: 'Here are the ingredients in the workspace:'
     })
   }
 
-  // Process each ingredient
   for (const shape of ingredientShapes) {
     const props = shape.props as IngredientProps
     const title = props.title || 'Untitled'
     const comments = props.comments || []
 
-    // Format comments text
     const commentText = comments.length > 0
       ? '\nComments:\n' + comments
           .map((comment: Comment, i: number) => `${i + 1}. ${comment.text}${comment.isAI ? ' (AI)' : ''}`)
@@ -61,65 +48,43 @@ export async function formatIngredientsForLLM(shapes: TLShape[]): Promise<Conten
       : ''
 
     if (shape.type === 'text-ingredient-shape') {
-      contentItems.push({
-        type: 'text',
-        text: `Ingredient: ${title}\nContent: ${props.text || ''}${commentText}`
+      formattedIngredients.push({
+        type: 'input_text',
+        text: `Text Ingredient: ${title}\nContent: ${props.text || ''}${commentText}` // Appended commentText
       })
     } else if (shape.type === 'image-ingredient-shape' && props.imageUrl) {
-      // Add title and comments as text
-      contentItems.push({
-        type: 'text',
-        text: `Ingredient: ${title}${commentText}`
+      // For image ingredients, push text information first, then the image item.
+      formattedIngredients.push({
+        type: 'input_text',
+        text: `Image Ingredient: ${title}${commentText}`
       })
-      
-      // Add image as separate item
-      contentItems.push({
-        type: 'image_url',
-        image_url: {
-          url: props.imageUrl
-        }
+      formattedIngredients.push({
+        type: 'input_image',
+        image_url: props.imageUrl,
+        detail: 'auto' 
       })
     }
   }
-
-  return contentItems
+  return formattedIngredients
 }
 
 /**
- * Formats ingredients into a JSON string that matches the specified OpenAI API format.
+ * Formats ingredients into a JSON string structured for an API, using ApiInputItem items.
  */
 export async function formatIngredientsForClipboard(shapes: TLShape[]): Promise<string> {
-  // Utilize the existing formatIngredientsForLLM to get the base content items
-  const llmContentItems = await formatIngredientsForLLM(shapes);
+  // Get the structured ingredient data
+  const formattedIngredients: ApiInputItem[] = await formatIngredientsForLLM(shapes);
 
-  // Transform the llmContentItems to the new API structure
-  const apiContentItems: ApiContentItem[] = llmContentItems.map(item => {
-    if (item.type === 'text') {
-      return {
-        type: 'input_text',
-        text: item.text ?? '', // Ensure text is a string
-      };
-    } else { // item.type === 'image_url'
-      // item.image_url and item.image_url.url are guaranteed by formatIngredientsForLLM for this type
-      return {
-        type: 'input_image',
-        image_url: item.image_url!.url,
-        detail: 'auto' as const, // Ensures 'auto' is treated as a literal type
-      };
-    }
-  });
-
-  // Construct the final JSON object structure
+  // Construct the final JSON object structure directly with ApiInputItem items
   const finalApiOutput = {
     input: [
       {
         type: 'message',
         role: 'user',
-        content: apiContentItems,
+        content: formattedIngredients, // Use the already formatted ingredients
       },
     ],
   };
 
-  // Return the JSON string
-  return JSON.stringify(finalApiOutput);
+  return JSON.stringify(finalApiOutput, null, 2); // Added null, 2 for pretty printing
 } 

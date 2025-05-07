@@ -1,3 +1,5 @@
+import { ImageDesignArtifact } from '../utils/chatHandler';
+
 export type ContentItem = {
   type: 'text' | 'image_url'
   text?: string
@@ -8,6 +10,7 @@ export type ContentItem = {
 
 export type Message = {
   role: 'user' | 'assistant'
-  content: string | ContentItem[]
+  content: string | ContentItem[] | ImageDesignArtifact[]
+  type?: 'visualization'
   isStreaming?: boolean
 } 

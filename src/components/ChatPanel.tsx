@@ -6,7 +6,8 @@ import { TLShapeId } from 'tldraw'
 import { editorContext } from '../App'
 import { IngredientProps } from '../types/Ingredient'
 import { Message } from '../types/Message'
-import { formatIngredientsForLLM } from '../utils/formatIngredientsForLLM'
+import { addAgentImageOutput, callVisualizeApi } from '../utils/chatHandler'
+import { ApiInputItem, formatIngredientsForLLM } from '../utils/formatIngredientsForLLM'
 import { IngredientTag } from './IngredientTag'
 import { MessageContent } from './MessageContent'
 
@@ -15,6 +16,7 @@ export function ChatPanel() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isVisualizing, setIsVisualizing] = useState(false)
   const [ingredients, setIngredients] = useState<{ id: TLShapeId; title: string; type: string }[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -90,23 +92,25 @@ export function ChatPanel() {
     e.preventDefault()
     if (!input.trim() || isLoading) return
 
-    // Get formatted ingredients data
     const shapes = editor.getCurrentPageShapes()
-    const contentItems = await formatIngredientsForLLM(shapes)
+    const llmFormattedIngredients: ApiInputItem[] = await formatIngredientsForLLM(shapes)
     
-    // Combine content items with user input at the end
-    const userMessage = { 
-      role: 'user' as const, 
-      content: [
-        ...(contentItems || []),
-        { type: 'text', text: input }
-      ]
+    const userTextInput: ApiInputItem = { type: 'input_text', text: input }
+
+    // userMessagePayloadContent will be an array of ApiInputItem items
+    const userMessagePayloadContent: ApiInputItem[] = [
+      ...llmFormattedIngredients,
+      userTextInput
+    ]
+
+    const userMessageForApi = {
+      role: 'user' as const,
+      content: userMessagePayloadContent
     }
 
-    console.log('New user message:', userMessage)
-    console.log('All messages being sent to API:', [...messages, userMessage])
+    console.log('New user message for handleSubmit:', userMessageForApi)
+    console.log('All messages being sent to Supabase chat API:', [...messages, userMessageForApi])
     
-    // Show the user's input in the chat
     setMessages(prev => [...prev, { role: 'user', content: input }])
     setInput('')
     setIsLoading(true)
@@ -119,7 +123,7 @@ export function ChatPanel() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: [...messages, userMessage],
+          messages: [...messages, userMessageForApi], 
         }),
       })
 
@@ -128,7 +132,6 @@ export function ChatPanel() {
       const reader = response.body?.getReader()
       if (!reader) throw new Error('No response body')
 
-      // Add initial assistant message with streaming flag
       setMessages(prev => [...prev, { role: 'assistant', content: '', isStreaming: true }])
 
       let assistantMessage = ''
@@ -139,7 +142,6 @@ export function ChatPanel() {
         const text = new TextDecoder().decode(value)
         assistantMessage += text
         
-        // Update the streaming message
         setMessages(prev => {
           const newMessages = [...prev]
           const lastMessage = newMessages[newMessages.length - 1]
@@ -150,7 +152,6 @@ export function ChatPanel() {
         })
       }
 
-      // Remove streaming flag once complete
       setMessages(prev => {
         const newMessages = [...prev]
         const lastMessage = newMessages[newMessages.length - 1]
@@ -171,6 +172,72 @@ export function ChatPanel() {
     }
   }, [input, messages, isLoading, editor])
 
+  const handleVisualizeClick = async () => {
+    try {
+      setIsVisualizing(true)
+      const shapes = editor.getCurrentPageShapes()
+      const llmFormattedIngredients: ApiInputItem[] = await formatIngredientsForLLM(shapes)
+
+      // Now we can directly pass ApiInputItem[] to callVisualizeApi
+      const imageDesignArtifacts = await callVisualizeApi(llmFormattedIngredients)
+
+      // Drop each generated image onto the canvas
+      if (imageDesignArtifacts.length > 0) {
+        const basePoint = editor.inputs.currentPagePoint || editor.getViewportScreenCenter()
+
+        // Helper to get image dimensions (limited to max 600 as in addAgentImageOutput)
+        const getDimensions = (url: string): Promise<{ width: number; height: number }> =>
+          new Promise((resolve, reject) => {
+            const img = new Image()
+            img.onload = () => {
+              const maxWidth = 600
+              const maxHeight = 600
+              let width = img.naturalWidth
+              let height = img.naturalHeight
+              if (width > maxWidth || height > maxHeight) {
+                const aspectRatio = width / height
+                if (width / maxWidth > height / maxHeight) {
+                  width = maxWidth
+                  height = width / aspectRatio
+                } else {
+                  height = maxHeight
+                  width = height * aspectRatio
+                }
+              }
+              resolve({ width, height })
+            }
+            img.onerror = () => reject(new Error('Failed to load image'))
+            img.src = url
+          })
+
+        let currentX = basePoint.x
+        for (const artifact of imageDesignArtifacts) {
+          try {
+            const dims = await getDimensions(artifact.image_url)
+            const point = { x: currentX, y: basePoint.y }
+            await addAgentImageOutput(editor, artifact, point)
+            currentX += dims.width + 20 // 20px gap between images
+          } catch (err) {
+            console.warn('Could not get dimensions for image artifact', err)
+          }
+        }
+      }
+
+      // Add the visualization results to the chat
+      const newMessage: Message = {
+        role: 'assistant',
+        content: imageDesignArtifacts,
+        type: 'visualization'
+      }
+      setMessages(prev => [...prev, newMessage])
+    } catch (error) {
+      console.error('Error in visualization:', error)
+      // Handle error appropriately
+    } finally {
+      setIsVisualizing(false)
+    }
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -188,8 +255,21 @@ export function ChatPanel() {
 
   return (
     <div className="flex flex-col h-full max-h-full min-h-0">
-      <div className="flex-none p-4 border-b border-gray-200">
+      <div className="flex-none p-4 border-b border-gray-200 flex justify-between items-center">
         <h2 className="text-lg font-semibold">Chat</h2>
+        <button
+          onClick={handleVisualizeClick}
+          disabled={isVisualizing || isLoading}
+          className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+        >
+          {isVisualizing && (
+            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          )}
+          {isVisualizing ? 'Visualizing...' : 'Visualize'}
+        </button>
       </div>
       
       {/* Scrollable messages area – flex child allowed to shrink */}
@@ -213,33 +293,37 @@ export function ChatPanel() {
               } rounded-lg p-3 ${message.role === 'assistant' ? 'w-full' : 'max-w-[88%]'}`}
             >
               {message.role === 'assistant' ? (
-                <ReactMarkdown 
-                  remarkPlugins={[remarkGfm]}
-                  className="prose prose-sm max-w-none dark:prose-invert"
-                  components={{
-                    p: (props) => <p className="my-1" {...props} />,
-                    ul: (props) => <ul className="my-2 list-disc pl-4" {...props} />,
-                    ol: (props) => <ol className="my-2 list-decimal pl-4" {...props} />,
-                    li: (props) => <li className="my-0.5" {...props} />,
-                    h1: (props) => <h1 className="text-xl font-bold my-2" {...props} />,
-                    h2: (props) => <h2 className="text-lg font-bold my-2" {...props} />,
-                    h3: (props) => <h3 className="text-base font-bold my-1.5" {...props} />,
-                    code: (props) => {
-                      const { inline, ...rest } = props as { inline?: boolean } & ClassAttributes<HTMLElement> & HTMLAttributes<HTMLElement>;
-                      return inline ? (
-                        <code className="bg-gray-200 dark:bg-gray-800 dark:text-gray-100 px-1 py-0.5 rounded" {...rest} />
-                      ) : (
-                        <code className="block bg-gray-200 dark:bg-gray-800 dark:text-gray-100 p-2 rounded my-2 overflow-x-auto" {...rest} />
-                      );
-                    },
-                    pre: (props) => <pre className="my-2 overflow-x-auto bg-gray-200 dark:bg-gray-800 rounded" {...props} />,
-                    blockquote: (props) => (
-                      <blockquote className="border-l-4 border-gray-300 pl-4 my-2 italic" {...props} />
-                    ),
-                  }}
-                >
-                  {typeof message.content === 'string' ? message.content : ''}
-                </ReactMarkdown>
+                message.type === 'visualization' ? (
+                  <MessageContent content={message.content} type="visualization" />
+                ) : (
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]}
+                    className="prose prose-sm max-w-none dark:prose-invert"
+                    components={{
+                      p: (props) => <p className="my-1" {...props} />,
+                      ul: (props) => <ul className="my-2 list-disc pl-4" {...props} />,
+                      ol: (props) => <ol className="my-2 list-decimal pl-4" {...props} />,
+                      li: (props) => <li className="my-0.5" {...props} />,
+                      h1: (props) => <h1 className="text-xl font-bold my-2" {...props} />,
+                      h2: (props) => <h2 className="text-lg font-bold my-2" {...props} />,
+                      h3: (props) => <h3 className="text-base font-bold my-1.5" {...props} />,
+                      code: (props) => {
+                        const { inline, ...rest } = props as { inline?: boolean } & ClassAttributes<HTMLElement> & HTMLAttributes<HTMLElement>
+                        return inline ? (
+                          <code className="bg-gray-200 dark:bg-gray-800 dark:text-gray-100 px-1 py-0.5 rounded" {...rest} />
+                        ) : (
+                          <code className="block bg-gray-200 dark:bg-gray-800 dark:text-gray-100 p-2 rounded my-2 overflow-x-auto" {...rest} />
+                        );
+                      },
+                      pre: (props) => <pre className="my-2 overflow-x-auto bg-gray-200 dark:bg-gray-800 rounded" {...props} />,
+                      blockquote: (props) => (
+                        <blockquote className="border-l-4 border-gray-300 pl-4 my-2 italic" {...props} />
+                      ),
+                    }}
+                  >
+                    {typeof message.content === 'string' ? message.content : ''}
+                  </ReactMarkdown>
+                )
               ) : (
                 <MessageContent content={message.content} />
               )}
