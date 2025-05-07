@@ -99,7 +99,7 @@ export function ChatPanel() {
       role: 'user' as const, 
       content: [
         ...(contentItems || []),
-        { type: 'text', text: input }
+        { type: 'input_text', text: `User message: ${input}` }
       ]
     }
 
@@ -112,14 +112,22 @@ export function ChatPanel() {
     setIsLoading(true)
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/chat/stream`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: [...messages, userMessage],
+          input: [
+            {
+              type: 'message',
+              role: 'user',
+              content: [
+                ...(contentItems || []),
+                { type: 'input_text', text: input },
+              ],
+            },
+          ],
         }),
       })
 
