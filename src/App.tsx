@@ -4,6 +4,7 @@ import 'tldraw/tldraw.css';
 import { ChatPanel } from './components/ChatPanel';
 import { IngredientsPanel } from './components/IngredientsPanel';
 import { ResizablePanel } from './components/ResizablePanel';
+import { myAssetStore } from './lib/tldrawAssetStore';
 import { ImageIngredientShape } from './shapes/ImageIngredientShape';
 import { TextIngredientShape } from './shapes/TextIngredientShape';
 import './styles.css';
@@ -101,6 +102,7 @@ export default function App() {
               persistenceKey="my-persistence-key"
               shapeUtils={customShapeUtils}
               onMount={(editor) => setEditor(editor)}
+              assets={myAssetStore}
             />
           </div>
         );
@@ -145,6 +147,7 @@ export default function App() {
                 persistenceKey="my-persistence-key"
                 shapeUtils={customShapeUtils}
                 onMount={(editor) => setEditor(editor)}
+                assets={myAssetStore}
               />
             </div>
           </div>
