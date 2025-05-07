@@ -178,8 +178,20 @@ export function ChatPanel() {
       const shapes = editor.getCurrentPageShapes()
       const llmFormattedIngredients: ApiInputItem[] = await formatIngredientsForLLM(shapes)
 
-      // Now we can directly pass ApiInputItem[] to callVisualizeApi
-      const imageDesignArtifacts = await callVisualizeApi(llmFormattedIngredients)
+      // Include any text the user has currently typed into the chat box
+      const trimmedInput = input.trim()
+      const userTextInput: ApiInputItem[] = trimmedInput
+        ? [{ type: 'input_text', text: trimmedInput }]
+        : []
+
+      // Combine ingredient data with any user-typed text
+      const visualizeInput: ApiInputItem[] = [
+        ...llmFormattedIngredients,
+        ...userTextInput,
+      ]
+
+      // Now pass the combined input to the visualize API
+      const imageDesignArtifacts = await callVisualizeApi(visualizeInput)
 
       // Drop each generated image onto the canvas
       if (imageDesignArtifacts.length > 0) {

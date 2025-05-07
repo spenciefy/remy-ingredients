@@ -17,19 +17,28 @@ if (!API_BASE_URL) {
 }
 
 export async function callVisualizeApi(apiContentItems: ApiInputItem[]): Promise<ImageDesignArtifact[]> {
+  // If the provided items don't include any input_text from the user, append a default instruction.
+  const hasUserInputText = apiContentItems.some(
+    (item) => item.type === 'input_text' && item.text.trim() !== ''
+  )
+
+  const contentItems: ApiInputItem[] = hasUserInputText
+    ? apiContentItems
+    : [
+        ...apiContentItems,
+        { type: 'input_text', text: 'visualize this as a web or mobile mockup' },
+      ]
+
   const requestBody = {
     input: [
       {
-        type: "message" as const,
-        role: "user" as const,
-        content: [
-          ...apiContentItems,
-          { type: "input_text" as const, text: "Visualize the current ingredients." }
-        ]
-      }
+        type: 'message' as const,
+        role: 'user' as const,
+        content: contentItems,
+      },
     ],
     // session_id is optional per API_SPECIFICATION.md
-  };
+  }
 
   console.log('Sending visualization request to /chat:', JSON.stringify(requestBody, null, 2));
   
