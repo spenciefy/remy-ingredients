@@ -182,26 +182,35 @@ export function IngredientsPanel() {
           <div className="flex-1">
             <h2 className="text-lg font-semibold">Ingredients ({ingredients.length})</h2>
           </div>
-          <div className="flex items-center">
+        </div>
+
+        {/* Caption */}
+        {ingredients.length === 0 && (
+          <div className="px-4 pt-2 pb-1">
+            <p className="text-xs text-gray-500 text-center">Start by cmd-v pasting text or images on the canvas</p>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex w-full px-4 pb-2 pt-4 gap-2">
             <button
               onClick={() => setShowAddPopup(true)}
-              className="p-1 hover:bg-gray-100 rounded-md transition-colors mr-2"
+              className="flex items-center justify-center gap-2 w-1/2 py-2.5 px-4 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors border border-gray-200"
               title="Add ingredient"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="16"/>
-                <line x1="8" y1="12" x2="16" y2="12"/>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
+              <span className="font-medium text-sm">Add</span>
             </button>
             <button
               onClick={handleCopyToClipboard}
-              className="p-1 hover:bg-gray-100 rounded-md transition-colors relative group"
+              className="flex items-center justify-center gap-2 w-1/2 py-2.5 px-4 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors border border-gray-200 relative"
               title="Copy ingredients data"
             >
               <svg
-                width="20"
-                height="20"
+                width="16"
+                height="16"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -211,10 +220,11 @@ export function IngredientsPanel() {
                 <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
                 <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
               </svg>
+              <span className="font-medium text-sm">Copy</span>
               {copySuccess && (
                 <svg
-                  width="20"
-                  height="20"
+                  width="16"
+                  height="16"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -226,6 +236,34 @@ export function IngredientsPanel() {
               )}
             </button>
           </div>
+
+        {/* Select All Toggle */}
+        <div className="px-4 py-1.5 flex items-center justify-between hover:bg-gray-50 cursor-pointer"
+             onClick={() => {
+               const allIds = ingredients.map(ing => ing.id);
+               const allActive = ingredients.length === activeIngredientIds.length;
+               
+               // Update all ingredients' active state
+               ingredients.forEach(ingredient => {
+                 editor.updateShape({
+                   ...ingredient,
+                   meta: {
+                     ...ingredient.meta,
+                     isActive: !allActive
+                   }
+                 })
+               });
+               
+               // Update active IDs state
+               setActiveIngredientIds(allActive ? [] : allIds);
+             }}>
+          <span className="text-sm font-semibold text-gray-900">Select all ingredients</span>
+          <input
+            type="checkbox"
+            checked={ingredients.length > 0 && ingredients.length === activeIngredientIds.length}
+            onChange={() => {}} // Handled by parent div onClick
+            className="h-4 w-4 text-blue-600 rounded border-gray-300 cursor-pointer"
+          />
         </div>
 
         {/* Content */}
