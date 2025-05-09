@@ -32,7 +32,7 @@ export async function formatIngredientsForLLM(shapes: TLShape[]): Promise<ApiInp
   if (ingredientShapes.length > 0) {
     formattedIngredients.push({
       type: 'input_text',
-      text: 'Here are the ingredients in the workspace:'
+      text: 'Here are the sources the user has added to the canvas:'
     })
   }
 

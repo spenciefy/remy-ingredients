@@ -70,17 +70,18 @@ export const addImageIngredient = async (editor: Editor, dataUrl: string, point:
     // 2. Convert dataUrl to File object for upload
     const imageFile = dataURLtoFile(dataUrl, imageName);
 
-    // 3. Start operations in parallel: get dimensions, generate summary, upload image
+    // 3. Start operations in parallel: get dimensions and generate summary.
     const dimensionsPromise = getDimensions(dataUrl);
     const summaryPromise = generateIngredientSummary(dataUrl, '', true); // Uses original dataUrl
-    const uploadPromise = uploadImageFile(imageFile);
 
-    // 4. Await all results
-    const [dimensions, summary, uploadedImageUrl] = await Promise.all([
+    // Wait for dimensions and summary concurrently
+    const [dimensions, summary] = await Promise.all([
       dimensionsPromise,
-      summaryPromise,
-      uploadPromise
+      summaryPromise
     ]);
+
+    // 4. Upload the image using the summary title for the filename
+    const uploadedImageUrl = await uploadImageFile(imageFile, summary.title);
 
     // 5. Create AI comment
     const newComment: Comment = {

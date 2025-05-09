@@ -6,7 +6,7 @@ import { TLShapeId } from 'tldraw'
 import { editorContext } from '../../App'
 import { IngredientProps } from '../../types/Ingredient'
 import { Message } from '../../types/Message'
-import { addAgentImageOutput, callVisualizeApi } from '../../utils/chatHandler'
+import { addAgentImageOutput, callChatStream, callVisualizeApi, ImageDesignMockup } from '../../utils/chatHandler'
 import { ApiInputItem, formatIngredientsForLLM } from '../../utils/formatIngredientsForLLM'
 import { IngredientTag } from './IngredientTag'
 import { MessageContent } from './MessageContent'
@@ -92,85 +92,211 @@ export function ChatPanel() {
     e.preventDefault()
     if (!input.trim() || isLoading) return
 
+    // Build the agent input (ingredients + user text)
     const shapes = editor.getCurrentPageShapes()
     const llmFormattedIngredients: ApiInputItem[] = await formatIngredientsForLLM(shapes)
-    
-    const userTextInput: ApiInputItem = { type: 'input_text', text: input }
 
-    // userMessagePayloadContent will be an array of ApiInputItem items
-    const userMessagePayloadContent: ApiInputItem[] = [
+    const userTextInput: ApiInputItem = { type: 'input_text', text: input }
+    const messageContentItems: ApiInputItem[] = [
       ...llmFormattedIngredients,
-      userTextInput
+      userTextInput,
     ]
 
-    const userMessageForApi = {
-      role: 'user' as const,
-      content: userMessagePayloadContent
+    // Format previous messages for the API
+    const formattedPreviousMessages = messages.map(msg => {
+      if (msg.role === 'user') {
+        // For user messages, wrap the text in an input_text item
+        return {
+          type: 'message' as const,
+          role: 'user' as const,
+          content: [{ type: 'input_text', text: msg.content as string }],
+        }
+      } else {
+        // For assistant messages, pass through as is if it's a string
+        return {
+          type: 'message' as const,
+          role: 'assistant' as const,
+          content: typeof msg.content === 'string' ? [{ type: 'input_text', text: msg.content }] : msg.content,
+        }
+      }
+    })
+
+    const requestBody = {
+      input: [
+        {
+          type: 'message' as const,
+          role: 'user' as const,
+          content: messageContentItems,
+        },
+        ...formattedPreviousMessages
+      ],
     }
 
-    console.log('New user message for handleSubmit:', userMessageForApi)
-    console.log('All messages being sent to Supabase chat API:', [...messages, userMessageForApi])
-    
-    setMessages(prev => [...prev, { role: 'user', content: input }])
+    console.log('🎤 User input:', input)
+    console.log('🧪 Request payload:', requestBody)
+
+    // Show user message in chat
+    setMessages(prev => [...prev, { role: 'user', content: input } as Message])
     setInput('')
+
+    // Placeholder assistant streaming message
+    setMessages(prev => [...prev, { role: 'assistant', content: '', isStreaming: true } as Message])
     setIsLoading(true)
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [...messages, userMessageForApi], 
-        }),
-      })
+      for await (const evt of callChatStream(requestBody)) {
+        console.log('📨 SSE event:', evt.event, evt)
 
-      if (!response.ok) throw new Error('Failed to send message')
-
-      const reader = response.body?.getReader()
-      if (!reader) throw new Error('No response body')
-
-      setMessages(prev => [...prev, { role: 'assistant', content: '', isStreaming: true }])
-
-      let assistantMessage = ''
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        const text = new TextDecoder().decode(value)
-        assistantMessage += text
-        
-        setMessages(prev => {
-          const newMessages = [...prev]
-          const lastMessage = newMessages[newMessages.length - 1]
-          if (lastMessage && lastMessage.isStreaming) {
-            lastMessage.content = assistantMessage
-          }
-          return newMessages
-        })
-      }
-
-      setMessages(prev => {
-        const newMessages = [...prev]
-        const lastMessage = newMessages[newMessages.length - 1]
-        if (lastMessage && lastMessage.isStreaming) {
-          lastMessage.isStreaming = false
+        // Handle delta events for streaming text
+        if (evt.event === 'delta') {
+          console.log('📝 Delta update:', evt.content)
+          setMessages(prev => {
+            const newMessages = [...prev]
+            // Find the last streaming assistant message
+            for (let i = newMessages.length - 1; i >= 0; i--) {
+              const msg = newMessages[i]
+              if (msg.role === 'assistant' && msg.isStreaming) {
+                // Append new content to existing message
+                msg.content = (msg.content as string || '') + (evt.content || '')
+                return newMessages
+              }
+            }
+            // Fallback – create new streaming message
+            return [...newMessages, { role: 'assistant', content: evt.content || '', isStreaming: true } as Message]
+          })
+          continue
         }
-        return newMessages
-      })
+
+        // Handle tool calls (simple status messages)
+        if (evt.event === 'tool_call') {
+          console.log('🛠️ Tool call:', evt.content)
+          if (evt.content) {
+            setMessages(prev => [...prev, { role: 'assistant', content: evt.content ?? '', type: 'tool_call' } as Message])
+          }
+          continue
+        }
+
+        // Handle agent updates
+        if (evt.event === 'agent_update') {
+          console.log('🤖 Agent update:', evt.content)
+          if (evt.content) {
+            setMessages(prev => [...prev, { role: 'assistant', content: evt.content ?? '', type: 'agent_update' } as Message])
+          }
+          continue
+        }
+
+        // Handle tool outputs – may include image artifacts
+        if (evt.event === 'tool_output') {
+          if (Array.isArray(evt.output)) {
+            const artifacts = evt.output as unknown as ImageDesignMockup[]
+            console.log('🎨 Generated artifacts:', artifacts)
+
+            // Drop images onto canvas similar to visualize flow
+            if (artifacts.length > 0) {
+              const basePoint = editor.inputs.currentPagePoint || editor.getViewportScreenCenter()
+              let currentX = basePoint.x
+
+              for (const artifact of artifacts) {
+                try {
+                  const point = { x: currentX, y: basePoint.y }
+                  await addAgentImageOutput(editor, artifact, point)
+                  console.log('🖼️ Added image to canvas:', artifact.title)
+                  currentX += 620 // approx width + gap (avoid costly img dims fetch)
+                } catch (err) {
+                  console.warn('❌ Failed to add artifact to canvas:', err)
+                }
+              }
+            }
+
+            // Update existing streaming message with visualization
+            setMessages(prev => {
+              const newMessages = [...prev];
+              let updated = false;
+              for (let i = newMessages.length - 1; i >= 0; i--) {
+                const msg = newMessages[i];
+                if (msg.role === 'assistant' && msg.isStreaming) {
+                  msg.content = artifacts;
+                  msg.type = 'visualization';
+                  // msg.isStreaming = false; // Keep streaming true if text might still follow
+                  updated = true;
+                  console.log('🖼️ Updated streaming message with visualization artifacts');
+                  break;
+                }
+              }
+              if (updated) return newMessages;
+              // Fallback: if no streaming message found (should not happen with placeholder)
+              console.warn('⚠️ No streaming message found to update with visualization, adding new message.');
+              return [...newMessages, { role: 'assistant', content: artifacts, type: 'visualization' } as Message];
+            });
+          } else if (evt.content) {
+            console.log('💬 Tool output message:', evt.content)
+            // Add tool output text as a new message, or update streaming if appropriate
+            setMessages(prev => {
+                const newMessages = [...prev];
+                let updated = false;
+                for (let i = newMessages.length - 1; i >= 0; i--) {
+                    const msg = newMessages[i];
+                    if (msg.role === 'assistant' && msg.isStreaming && typeof msg.content === 'string') {
+                        msg.content += `\n\nTool output: ${evt.content}`;
+                        updated = true;
+                        break;
+                    }
+                }
+                if (updated) return newMessages;
+                // Fallback or if streaming message is already image
+                return [...newMessages, { role: 'assistant', content: evt.content ?? '' } as Message];
+            });
+          }
+          continue
+        }
+
+        // Handle text messages from agent (final message event)
+        if (evt.event === 'message') {
+          const textContent = evt.content || ''
+          console.log('🤖 Agent message (event type "message"):', textContent)
+          setMessages(prev => {
+            const newMessages = [...prev]
+            for (let i = newMessages.length - 1; i >= 0; i--) {
+              const msg = newMessages[i]
+              if (msg.role === 'assistant' && msg.isStreaming) {
+                // If the message is already a visualization, we might want to append this text
+                // or store it in a dedicated field. For now, if it's not a visualization,
+                // this textContent (potentially JSON) becomes the main content.
+                // If deltas already populated text, this might overwrite it or be a structured version.
+                if (msg.type !== 'visualization') {
+                    msg.content = textContent // This might be a raw JSON string.
+                } else {
+                    // msg.content is ImageDesignMockup[]. How to add textContent?
+                    // For now, we log it. A better approach would be to parse textContent
+                    // if it's JSON and extract relevant text to show with the image.
+                    console.log('🤖 Received textContent for an existing visualization message:', textContent);
+                    // Or, if you want to append simple string text to a visualization message:
+                    // msg.description = (msg.description || "") + "\n" + textContent; // Requires adding 'description' to Message type
+                }
+                msg.isStreaming = false
+                console.log('✏️ Finalized streaming message from "message" event')
+                return newMessages
+              }
+            }
+            // Fallback – no streaming message found.
+            console.warn('⚠️ No streaming message found to finalize from "message" event, adding new message.');
+            return [...newMessages, { role: 'assistant', content: textContent, isStreaming: false } as Message]
+          })
+          continue
+        }
+      }
     } catch (error) {
-      console.error('Error:', error)
+      console.error('💥 Error during streaming chat:', error)
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' }
+        { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' } as Message
       ])
     } finally {
+      console.log('🏁 Chat stream completed')
       setIsLoading(false)
       textareaRef.current?.focus()
     }
-  }, [input, messages, isLoading, editor])
+  }, [input, isLoading, editor, messages])
 
   const handleVisualizeClick = async () => {
     try {
@@ -241,7 +367,7 @@ export function ChatPanel() {
         content: imageDesignArtifacts,
         type: 'visualization'
       }
-      setMessages(prev => [...prev, newMessage])
+      setMessages(prev => [...prev, newMessage as Message])
     } catch (error) {
       console.error('Error in visualization:', error)
       // Handle error appropriately
@@ -306,9 +432,9 @@ export function ChatPanel() {
             >
               {message.role === 'assistant' ? (
                 message.type === 'visualization' ? (
-                  <MessageContent content={message.content} type="visualization" />
+                  <MessageContent content={Array.isArray(message.content) ? message.content : []} type="visualization" />
                 ) : (
-                  <ReactMarkdown 
+                  <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     className="prose prose-sm max-w-none dark:prose-invert"
                     components={{
@@ -337,7 +463,7 @@ export function ChatPanel() {
                   </ReactMarkdown>
                 )
               ) : (
-                <MessageContent content={message.content} />
+                <MessageContent content={typeof message.content === 'string' ? message.content : ''} />
               )}
             </div>
           </div>
