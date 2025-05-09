@@ -12,21 +12,52 @@ const UPLOAD_URL = `${VITE_SUPABASE_URL}/functions/v1/upload`;
 /**
  * Uploads a file to the Supabase endpoint.
  * @param file The file to upload.
+ * @param customName Optional custom name for the file.
  * @returns A promise that resolves with the public URL of the uploaded file.
  * @throws If the upload fails or the response is not as expected.
  */
-export async function uploadImageFile(file: File): Promise<string> {
-  const clientSideImageName = `${uniqueId()}-${file.name.replace(/[^a-zA-Z0-9_.-]/g, '_')}`;
+export async function uploadImageFile(file: File, customName?: string): Promise<string> {
+  // Use the provided customName (e.g. the ingredient title) if available; otherwise fall back to the
+  // original filename. In either case prepend a unique id to avoid collisions and sanitise the text so
+  // it is safe for URLs / storage keys.
+  const baseName = (customName ?? file.name)
+    .replace(/[^a-zA-Z0-9_.-]/g, '_')
+    .replace(/\s+/g, '_');
+
+  const extensionFromType = (() => {
+    const match = file.type.match(/image\/(.*)/);
+    return match ? `.${match[1]}` : '';
+  })();
+
+  const clientSideImageName = `${baseName}-${uniqueId()}${extensionFromType}`;
   console.log('[Debug] uploadImageFile: Starting upload for:', clientSideImageName, 'Type:', file.type);
 
   try {
+    // Convert the file to a base64 data URL so it can be sent as JSON to the
+    // Supabase Edge Function. The edge function expects a JSON body with the
+    // shape: { file: <dataUrl>, imageName: <string> } and will reject raw
+    // binary bodies (which previously caused the "Unexpected token" JSON
+    // parsing error).
+
+    const fileToDataUrl = (f: File): Promise<string> => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(f);
+    });
+
+    const dataUrl = await fileToDataUrl(file);
+ 
     const response = await fetch(UPLOAD_URL, {
         method: 'POST',
         headers: {
-            'Content-Type': file.type, 
+            'Content-Type': 'application/json',
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
-        body: file, 
+        body: JSON.stringify({
+          file: dataUrl,
+          imageName: clientSideImageName,
+        }),
     });
 
     if (!response.ok) {
