@@ -8,6 +8,7 @@ import { IngredientProps } from '../../types/Ingredient'
 import { Message } from '../../types/Message'
 import { addAgentImageOutput, callChatStream, callVisualizeApi, ImageDesignMockup } from '../../utils/chatHandler'
 import { ApiInputItem, formatIngredientsForLLM } from '../../utils/formatIngredientsForLLM'
+import { SuggestionsBox } from '../Suggestions/SuggestionsBox'
 import { IngredientTag } from './IngredientTag'
 import { MessageContent } from './MessageContent'
 
@@ -393,6 +394,8 @@ export function ChatPanel() {
 
   return (
     <div className="flex flex-col h-full max-h-full min-h-0">
+      {editor && <SuggestionsBox editor={editor} />}
+
       <div className="flex-none p-4 border-b border-gray-200 flex justify-between items-center">
         <h2 className="text-lg font-semibold">Chat</h2>
         <button
