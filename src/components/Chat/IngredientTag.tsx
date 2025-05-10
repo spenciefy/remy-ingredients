@@ -31,7 +31,7 @@ export function IngredientTag({ ingredient, onDeactivate }: IngredientTagProps) 
   return (
     <span
       key={ingredient.id}
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-white text-gray-700 border border-gray-300 group relative"
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-white dark:bg-gray-600 text-gray-700 dark:text-gray-100 border border-gray-300 dark:border-gray-500 group relative"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -42,18 +42,18 @@ export function IngredientTag({ ingredient, onDeactivate }: IngredientTagProps) 
             e.stopPropagation();
             onDeactivate(ingredient.id);
           }}
-          className="w-3 h-3 flex items-center justify-center text-gray-500 hover:text-red-500 transition-colors"
+          className="w-3 h-3 flex items-center justify-center text-gray-500 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 transition-colors"
         >
           ×
         </button>
       ) : ingredient.type === 'image-ingredient-shape' && imageUrl ? (
-        <div className="w-3.5 h-3.5 rounded-sm overflow-hidden flex items-center justify-center">
+        <div className="w-3.5 h-3.5 rounded-sm overflow-hidden flex items-center justify-center bg-gray-200 dark:bg-gray-500">
           <img src={imageUrl} alt="" className="w-full h-full object-cover" />
         </div>
       ) : ingredient.type === 'text-ingredient-shape' ? (
-        <HiOutlineDocumentText className="w-3 h-3" />
+        <HiOutlineDocumentText className="w-3 h-3 text-gray-600 dark:text-gray-300" />
       ) : (
-        <BsImage className="w-3 h-3" />
+        <BsImage className="w-3 h-3 text-gray-600 dark:text-gray-300" />
       )}
       {ingredient.title || 'Untitled'}
     </span>

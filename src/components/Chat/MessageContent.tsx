@@ -11,7 +11,7 @@ interface MessageContentProps {
 export function MessageContent({ content, type }: MessageContentProps) {
   if (type === 'tool_call' && typeof content === 'string') {
     return (
-      <div className="flex items-center space-x-2 text-gray-500 italic">
+      <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 italic">
         <FiTool className="flex-shrink-0" />
         <p className="whitespace-pre-wrap">🛠️ {content}</p>
       </div>
@@ -20,7 +20,7 @@ export function MessageContent({ content, type }: MessageContentProps) {
 
   if (type === 'agent_update' && typeof content === 'string') {
     return (
-      <div className="flex items-center space-x-2 text-gray-500 italic">
+      <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 italic">
         <AiOutlineLoading3Quarters className="flex-shrink-0 animate-spin" />
         <p className="whitespace-pre-wrap">🤖 {content}</p>
       </div>
@@ -31,10 +31,10 @@ export function MessageContent({ content, type }: MessageContentProps) {
     return (
       <div className="space-y-4">
         {(content as ImageDesignMockup[]).map((artifact, index) => (
-          <div key={index} className="space-y-2">
-            <h3 className="text-lg font-semibold">🎨 {artifact.title || 'Generated Design'}</h3>
+          <div key={index} className="space-y-2 p-3 bg-gray-50 dark:bg-gray-600 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">🎨 {artifact.title || 'Generated Design'}</h3>
             {artifact.rationale && (
-              <p className="text-gray-600">{artifact.rationale}</p>
+              <p className="text-gray-600 dark:text-gray-300">{artifact.rationale}</p>
             )}
             {artifact.image_url && (
               <img
@@ -50,7 +50,7 @@ export function MessageContent({ content, type }: MessageContentProps) {
   }
 
   if (typeof content === 'string') {
-    return <p className="whitespace-pre-wrap">{type === undefined ? '💬 ' : ''}{content}</p>
+    return <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-100">{type === undefined ? '💬 ' : ''}{content}</p>
   }
 
   return (
@@ -58,7 +58,7 @@ export function MessageContent({ content, type }: MessageContentProps) {
       {(content as ContentItem[]).map((item, index) => {
         if (item.type === 'text') {
           return (
-            <p key={index} className="whitespace-pre-wrap">
+            <p key={index} className="whitespace-pre-wrap text-gray-800 dark:text-gray-100">
               💬 {item.text}
             </p>
           )

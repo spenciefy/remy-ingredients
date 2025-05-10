@@ -25,14 +25,14 @@ export function IngredientPanelRow({
   return (
     <div 
       className={`mb-2 rounded-md cursor-pointer overflow-hidden transition-colors ${
-        isSelected ? 'bg-blue-100' : 'hover:bg-gray-100'
+        isSelected ? 'bg-blue-100 dark:bg-blue-700' : 'hover:bg-gray-100 dark:hover:bg-gray-700'
       }`}
       onClick={onSelect}
     >
       <div className="px-2 py-1.5 flex items-center space-x-2">
         {/* Small square image preview for image ingredients */}
         {ingredient.type === 'image-ingredient-shape' && ingredient.props.imageUrl ? (
-          <div className="w-5 h-5 flex-shrink-0 rounded overflow-hidden bg-gray-200 shadow-sm">
+          <div className="w-5 h-5 flex-shrink-0 rounded overflow-hidden bg-gray-200 dark:bg-gray-600 shadow-sm">
             <img 
               src={ingredient.props.imageUrl} 
               alt={getIngredientTitle(ingredient)} 
@@ -40,14 +40,14 @@ export function IngredientPanelRow({
             />
           </div>
         ) : (
-          <HiOutlineDocumentText className="w-5 h-5 flex-shrink-0 text-gray-600" />
+          <HiOutlineDocumentText className="w-5 h-5 flex-shrink-0 text-gray-600 dark:text-gray-300" />
         )}
         
         {/* Title */}
         {ingredient.id === editor.getEditingShapeId() ? (
           <input
             type="text"
-            className="flex-1 text-sm px-1 border rounded"
+            className="flex-1 text-sm px-1 border rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white border-gray-300 dark:border-gray-500 focus:ring-blue-500 dark:focus:ring-blue-400"
             defaultValue={ingredient.props.title}
             autoFocus
             onBlur={(e) => {
@@ -76,7 +76,7 @@ export function IngredientPanelRow({
           />
         ) : (
           <span 
-            className="flex-1 text-base text-gray-900 truncate"
+            className={`flex-1 text-base truncate ${isSelected ? 'text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-gray-100'}`}
             onDoubleClick={(e) => {
               e.stopPropagation()
               onDoubleClick()
@@ -104,7 +104,7 @@ export function IngredientPanelRow({
               e.stopPropagation()
               onToggleActive()
             }}
-            className="h-4 w-4 text-blue-600 rounded border-gray-300 cursor-pointer"
+            className={`h-4 w-4 text-blue-600 dark:text-blue-400 rounded border-gray-300 dark:border-gray-500 focus:ring-blue-500 dark:focus:ring-offset-0 dark:focus:ring-blue-400 bg-white dark:bg-gray-700 cursor-pointer`}
           />
         </div>
       </div>

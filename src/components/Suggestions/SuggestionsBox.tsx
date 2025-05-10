@@ -159,23 +159,23 @@ export function SuggestionsBox({ editor }: SuggestionsBoxProps) {
   }, []);
 
   return (
-    <div className="border-b border-gray-200 p-4" style={{ height: `${suggestionsBoxHeight}px`, position: 'relative' }}>
+    <div className="border-b border-gray-300 dark:border-gray-600 p-4 bg-white dark:bg-custom-dark-panel rounded-t-2xl" style={{ height: `${suggestionsBoxHeight}px`, position: 'relative' }}>
       <div className="flex justify-between items-center mb-2">
-        <h3 className="text-md font-semibold">Remy's Thoughts</h3>
+        <h3 className="text-md font-semibold text-gray-900 dark:text-white">Remy's Thoughts</h3>
         <button
           onClick={handleRefresh}
           disabled={isLoading}
-          className="p-1.5 text-gray-600 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-1.5 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Refresh suggestions"
         >
           <FiRefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
         </button>
       </div>
-      <div className="h-full overflow-y-auto text-sm text-gray-700 bg-gray-50 p-2 rounded scrollbar-thin" style={{ height: `calc(100% - 32px - 8px)` /* Account for title and drag handle area */ }}>
+      <div className="h-full overflow-y-auto text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 p-2 rounded scrollbar-thin dark:scrollbar-thumb-gray-500 dark:scrollbar-track-gray-700" style={{ height: `calc(100% - 32px - 8px)` /* Account for title and drag handle area */ }}>
         {/* Initial loading state (before first chunk or if no active ingredients) */}
         {isLoading && !currentSuggestion && activeIngredients.length > 0 && !error && (
-          <div className="flex items-center">
-            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <div className="flex items-center text-gray-600 dark:text-gray-300">
+            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -187,7 +187,7 @@ export function SuggestionsBox({ editor }: SuggestionsBoxProps) {
         {currentSuggestion && !error && (
           <ReactMarkdown 
             remarkPlugins={[remarkGfm]} 
-            className="prose prose-sm max-w-none dark:prose-invert"
+            className="prose prose-sm max-w-none dark:prose-invert text-gray-700 dark:text-gray-200"
             components={{
               ul: (props) => <ul className="my-2 list-disc pl-4" {...props} />,
               ol: (props) => <ol className="my-2 list-decimal pl-4" {...props} />,
@@ -203,23 +203,23 @@ export function SuggestionsBox({ editor }: SuggestionsBoxProps) {
 
         {/* Placeholder: No active ingredients and not loading initial suggestion */}
         {!isLoading && activeIngredients.length === 0 && !error && !currentSuggestion && (
-          <p>Remy is waiting for you to add ingredients.</p>
+          <p className="text-gray-500 dark:text-gray-400">Remy is waiting for you to add ingredients.</p>
         )}
         
         {/* Placeholder: Active ingredients, but no suggestion initiated/available and not currently loading one */}
         {!isLoading && activeIngredients.length > 0 && !currentSuggestion && !error && (
-          <p>Click refresh to get Remy's thoughts, or wait for Remy to ponder.</p>
+          <p className="text-gray-500 dark:text-gray-400">Click refresh to get Remy's thoughts, or wait for Remy to ponder.</p>
         )}
 
         {/* Error message */}
-        {error && <p className="text-red-500">Error: {error}</p>}
+        {error && <p className="text-red-500 dark:text-red-400">Error: {error}</p>}
       </div>
       <div 
         onMouseDown={handleMouseDownResize}
         className="absolute bottom-0 left-0 w-full h-2 cursor-ns-resize flex items-center justify-center"
         style={{ touchAction: 'none' }} // Prevent scrolling on touch devices when dragging
       >
-        <div className="w-8 h-1 bg-gray-400 rounded-full hover:bg-gray-500 transition-colors"></div>
+        <div className="w-8 h-1 bg-gray-400 dark:bg-gray-500 rounded-full hover:bg-gray-500 dark:hover:bg-gray-400 transition-colors"></div>
       </div>
     </div>
   );

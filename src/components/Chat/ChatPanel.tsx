@@ -393,15 +393,15 @@ export function ChatPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full max-h-full min-h-0">
+    <div className="flex flex-col h-full max-h-full min-h-0 bg-white dark:bg-custom-dark-panel rounded-b-2xl">
       {editor && <SuggestionsBox editor={editor} />}
 
-      <div className="flex-none p-4 border-b border-gray-200 flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Chat</h2>
+      <div className="flex-none p-4 border-b border-gray-300 dark:border-gray-600 flex justify-between items-center">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Chat</h2>
         <button
           onClick={handleVisualizeClick}
           disabled={isVisualizing || isLoading}
-          className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center rounded-full"
         >
           {isVisualizing && (
             <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -416,10 +416,10 @@ export function ChatPanel() {
       {/* Scrollable messages area – flex child allowed to shrink */}
       <div 
         ref={chatContainerRef}
-        className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600"
+        className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-700"
       >
         {messages.length === 0 && (
-          <div className="text-center text-gray-500 mt-8">
+          <div className="text-center text-gray-500 dark:text-gray-400 mt-8">
             <p>Chat about your ingredients</p>
           </div>
         )}
@@ -429,9 +429,7 @@ export function ChatPanel() {
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`${
-                message.role === 'user' ? 'bg-gray-700 text-white ml-12' : 'bg-gray-100 text-gray-800'
-              } rounded-lg p-3 ${message.role === 'assistant' ? 'w-full' : 'max-w-[88%]'}`}
+              className={`${message.role === 'user' ? 'bg-gray-700 text-white ml-12' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-lg p-3 ${message.role === 'assistant' ? 'w-full' : 'max-w-[88%]'}`}
             >
               {message.role === 'assistant' ? (
                 message.type === 'visualization' ? (
@@ -445,20 +443,20 @@ export function ChatPanel() {
                       ul: (props) => <ul className="my-2 list-disc pl-4" {...props} />,
                       ol: (props) => <ol className="my-2 list-decimal pl-4" {...props} />,
                       li: (props) => <li className="my-0.5" {...props} />,
-                      h1: (props) => <h1 className="text-xl font-bold my-2" {...props} />,
-                      h2: (props) => <h2 className="text-lg font-bold my-2" {...props} />,
-                      h3: (props) => <h3 className="text-base font-bold my-1.5" {...props} />,
+                      h1: (props) => <h1 className="text-xl font-bold my-2 text-gray-900 dark:text-white" {...props} />,
+                      h2: (props) => <h2 className="text-lg font-bold my-2 text-gray-900 dark:text-white" {...props} />,
+                      h3: (props) => <h3 className="text-base font-bold my-1.5 text-gray-900 dark:text-white" {...props} />,
                       code: (props) => {
                         const { inline, ...rest } = props as { inline?: boolean } & ClassAttributes<HTMLElement> & HTMLAttributes<HTMLElement>
                         return inline ? (
-                          <code className="bg-gray-200 dark:bg-gray-800 dark:text-gray-100 px-1 py-0.5 rounded" {...rest} />
+                          <code className="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-100 px-1 py-0.5 rounded" {...rest} />
                         ) : (
-                          <code className="block bg-gray-200 dark:bg-gray-800 dark:text-gray-100 p-2 rounded my-2 overflow-x-auto" {...rest} />
+                          <code className="block bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-100 p-2 rounded my-2 overflow-x-auto" {...rest} />
                         );
                       },
-                      pre: (props) => <pre className="my-2 overflow-x-auto bg-gray-200 dark:bg-gray-800 rounded" {...props} />,
+                      pre: (props) => <pre className="my-2 overflow-x-auto bg-gray-200 dark:bg-gray-600 rounded" {...props} />,
                       blockquote: (props) => (
-                        <blockquote className="border-l-4 border-gray-300 pl-4 my-2 italic" {...props} />
+                        <blockquote className="border-l-4 border-gray-300 dark:border-gray-500 pl-4 my-2 italic text-gray-700 dark:text-gray-300" {...props} />
                       ),
                     }}
                   >
@@ -473,19 +471,19 @@ export function ChatPanel() {
         ))}
         {isLoading && !messages[messages.length - 1]?.isStreaming && (
           <div className="flex justify-start">
-            <div className="w-full bg-gray-100 rounded-lg p-3 animate-pulse">
-              <div className="h-4 w-8 bg-gray-300 rounded"></div>
+            <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-lg p-3 animate-pulse">
+              <div className="h-4 w-8 bg-gray-300 dark:bg-gray-500 rounded"></div>
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="flex-none">
+      <div className="flex-none border-t border-gray-300 dark:border-gray-600 rounded-b-2xl">
         <div className="p-4">
           <form onSubmit={handleSubmit} className="relative">
             {ingredients.length > 0 && (
-              <div className="bg-gray-100 px-3 py-1.5 rounded-t-lg flex flex-wrap gap-1.5 border border-b-0 border-gray-300 max-h-24 overflow-y-auto">
+              <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-t-lg flex flex-wrap gap-1.5 border border-b-0 border-gray-300 dark:border-gray-600 max-h-24 overflow-y-auto">
                 {ingredients.map(ingredient => (
                   <IngredientTag
                     key={ingredient.id}
@@ -515,9 +513,7 @@ export function ChatPanel() {
               }}
               onKeyDown={handleKeyDown}
               placeholder="Type a message..."
-              className={`w-full px-4 py-3 pr-12 border border-gray-300 focus:outline-none focus:border-blue-500 resize-none ${
-                ingredients.length > 0 ? 'rounded-b-lg' : 'rounded-lg'
-              }`}
+              className={`w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${ingredients.length > 0 ? 'rounded-b-lg' : 'rounded-b-2xl'}`}
               style={{
                 minHeight: '44px',
                 maxHeight: '150px'
@@ -528,7 +524,7 @@ export function ChatPanel() {
             <button
               type="submit"
               disabled={!input.trim() || isLoading}
-              className="absolute right-3 bottom-[10px] p-2 text-blue-500 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="absolute right-3 bottom-[10px] p-2 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <FiSend size={20} />
             </button>
